@@ -1,10 +1,4 @@
 --ショートカットをpeerstplayerに似せたlua
---まだまだ作りかけ
---したいことメモキャッシュが貯まったら再生速度を少し上げて遅延を減らす
---require 'alien'
---dofile("reconnect.lua")
---require("reconnect")
---mp.set_property("options/keep-open","always")
 
 function startup()
 
@@ -15,7 +9,7 @@ ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ
+statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ
 showwindowsize = 1			--表示動画サイズを表示
 showsoucesize = 1			--動画の元のサイズを表示
 showfps = 1					--fps表示
@@ -29,31 +23,20 @@ ssfolder = "d:\\a b\\" 		--保存場所。区切りは｢\\｣で両端のダブ
 
 	orgwidth = mp.get_property("width")
 	orgheight = mp.get_property("height")
-	fps = string.format("%6.1f", mp.get_property("fps"))
-	if statusbar == 1 and mp.get_property("border") == "yes" then-- 	mp.commandv("cycle" , "border")
-	elseif statusbar == 0 and mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
+	if mp.get_property("fps") == nil then fps = 0
+	else fps = mp.get_property("fps")
+	end
+	fps = string.format("%6.1f", fps)
+	if statusbar == 1 then
+		if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
+		end
+	elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
 	end
 	print(mp.get_property("border"))
+	mp.set_property("options/border", "yes")
+	print(mp.get_property("options/border"))
 	mp.set_property("options/volume", initialvolume )
---	tfilesize = mp.get_property("file-size")	
---	if tfilesize == nil then tfilesize = 0 end
---	mp.set_property("title", tfps .." ".. tfilesize .." ".. tvol )
-	--volume = mp.get_property_number("volume")
---	print(mp.get_property("media-title"))
---	print(mp.get_property("${title}"))
---	print(mp.get_property("fps"))
---	mp.set_property("media-title", "${media-title}" ..tvol )
---	mp.set_property("media-title", "hogehoge" )
---	if mp.get_property("${title}") == nil then mp.set_property("${title}", "titleempty") end
---	mp.command("set ".."title ".."${filename}")						---use-filename-title 	--title='${filename}'
---	print(ttype)
---	print(tfilesize)
-	print(tfps)
---	print(tmediatitle)
---	print(mp.get_property("property-list"))
 	
--- Set the new status line
---mp.set_property("options/term-status-msg", newStatus)
 end
 mp.register_event("file-loaded", startup)
 
@@ -65,7 +48,6 @@ mp.add_periodic_timer(1, (function()
 		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
 		if fps == nil then tfps = 0 
 		end
---	tfps = string.format("%6.1f", mp.get_property("fps")) end
 		ttype = mp.get_property("file-format")
 		if ttype == nil then ttype = "0"
 		end
@@ -73,21 +55,13 @@ mp.add_periodic_timer(1, (function()
 		if vol == nil then vol = "0" 
 		end
 		tvol =  string.format("%d", vol)
-		if mp.get_property("mute") == "yes" then tvol = "mute" 
+		if mp.get_property_bool("mute") then tvol = "mute" 
 		end
 		tbarlist = ttype .." ".. tmediatitle .." (".. fps ..") c:".. tcache .."KB".. "   ".. ttime .." vol:" .. tvol
 		mp.set_property("options/title", tbarlist )
---	tfps = mp.get_property("fps")
---	tvol = mp.get_property("volume")
---	mp.set_property("media-title", "media-title" )
---	mp.observe_property("title", "native" , "aaaa")
---	print(mp.get_property("media-title"))
---	print(mp.get_property("window-title"))
 --	mp.set_property("options/window-minimized","yes")
 --	aaa = mp.get_property("window-minimized")
---	bbb = mp.get_property("vid")
 --	print(aaa)
---	print(bbb)
 	end
 end))
 
@@ -124,7 +98,6 @@ function cgainvolume()
 	mp.commandv("add", "volume", ctrlvolume)
 	mp.osd_message(mp.get_property("volume",1))
 end
---mp.add_key_binding("Ctrl+Up", "cgainvolume", cgainvolume)
 mp.add_key_binding("Ctrl+MOUSE_BTN3", "cgainvolume_wheel", cgainvolume)
 
 function sgainvolume()
@@ -146,7 +119,6 @@ function creducevolume()
 	mp.commandv("add", "volume", -1 * ctrlvolume)
 	mp.osd_message(mp.get_property("volume",1))
 end
---mp.add_key_binding("Ctrl+Down", "creducevolume", creducevolume)
 mp.add_key_binding("Ctrl+MOUSE_BTN4", "creducevolume_wheel", creducevolume)
 
 function sreducevolume()
@@ -158,36 +130,29 @@ mp.add_key_binding("Shift+MOUSE_BTN4", "sreducevolume_wheel", sreducevolume)
 
 --音声を左のみに
 function panleft()
---	mp.set_property("af", "pan=2:[ 1 , 0 , 1 , 0 ]")
 	if mp.get_property_number("audio-channels") == 1 then
---	mp.set_property("af", "channnels=2:[ 1-1 , 1-0 ]")
 	mp.set_property("af", "pan=2:[ 1 , 0 ]")
 	else mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
---	mp.commandv("af", "set", "pan=2:[1,0,1,0]")
 end
 mp.add_key_binding("Ctrl+Left", "panleft", panleft)
 
 --音声を右のみに
 function panright()
---	mp.set_property("af", "pan=2:[ 1 , 1 , 1 , 1 ]")
 	if mp.get_property_number("audio-channels") == 1 then
 	mp.set_property("af", "pan=2:[ 1 , 1 ]") end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
---	end
 end
 mp.add_key_binding("Ctrl+Right", "panright", panright)
 
 --音声を中央（モノラル）に
 function pancenter()
 	mp.set_property("af", "pan=1:[ 1 , 1 ]")
---	mp.set_property("af", "channels=1") 
 end
 mp.add_key_binding("Ctrl+Up", "pancenter", pancenter)
 
 --音声を普通のステレオに
 function panrestore()
---	mp.set_property("af", "pan=2:[ 0.5 , 0.5 , 0.5 , 0.5 ]")
 	mp.set_property("af", "channels=2")
 end
 mp.add_key_binding("Ctrl+Down", "panrestore", panrestore)
@@ -288,4 +253,3 @@ function to800x600()
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
 mp.add_key_binding("Alt+5", "800x600", to800x600)
---mp.add_key_binding("Alt+6", "1000x768", changewindowsize(1000,768,-1))
