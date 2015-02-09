@@ -1,32 +1,39 @@
 --ショートカットをpeerstplayerに似せたlua
 
 function startup()
+    if mp.get_property_number("playlist-count")  < 3 then
 
 --ボリューム関係
 initialvolume = 11			--初期ボリューム
-volume = 5					--マウスホイールの変更量
+volume = 5				--マウスホイールの変更量
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ
-showwindowsize = 1			--表示動画サイズを表示
-showsoucesize = 1			--動画の元のサイズを表示
-showfps = 1					--fps表示
-showbitrate = 1				--ビットレート表示
+statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+showformattype = 1			--flvとかmkvとかwmv(asf)とか表示（未表示は未実装）
+showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
+showsoucesize = 1			--動画の元のサイズを表示（未実装）
+showfps = 1				--fps表示（実fpsは未実装）
+showbitrate = 1				--キーフレーム間のビットレート表示（未表示は未実装）
+showcachesize = 1			--キャッシュサイズを表示（未表示は未実装）
 
 --スクリーンショット関係
 sstype = "jpg"				--「"png"」又は「"jpg"」
-jpgquality = 0				--jpgの時の画質。0-100
-sssize = 1					--ソースサイズ「1」か表示windowサイズ「0」か
-ssfolder = "d:\\a b\\" 		--保存場所。区切りは｢\\｣で両端のダブルクォーテーションと最後の\\は必須
+jpgquality = 90				--jpgの時の画質。0-100
+sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
+ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と最後の\\は必須
 
-	orgwidth = mp.get_property("width")
+	orgwidth  = mp.get_property("width")
+	currentwidth = orgwidth
 	orgheight = mp.get_property("height")
+	currentheight = orgheight
+	vrate = 0
+	arate = 0
 	if mp.get_property("fps") == nil then fps = 0
 	else fps = mp.get_property("fps")
 	end
-	fps = string.format("%6.1f", fps)
+	fps = string.format("%4.1f", fps)
 	if statusbar == 1 then
 		if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
 		end
@@ -36,28 +43,55 @@ ssfolder = "d:\\a b\\" 		--保存場所。区切りは｢\\｣で両端のダブ
 	mp.set_property("options/border", "yes")
 	print(mp.get_property("options/border"))
 	mp.set_property("options/volume", initialvolume )
-	
+    end	
 end
 mp.register_event("file-loaded", startup)
 
 mp.add_periodic_timer(1, (function()
 --	if (mp.get_property_bool("core-idle")) ~= "no" then
-	if mp.get_property("playback-time") ~= nil then
+	if
+		mp.get_property_number("playback-time") ~= nil
+		and
+		string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil
+	then
+	
 		tmediatitle = mp.get_property("media-title")
 		ttime = mp.get_property_osd("playback-time")			--stream-pos	--length  --playback-time
-		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
-		if fps == nil then tfps = 0 
+		if
+			vrate ~= mp.get_property("packet-video-bitrate") then
+			vrate = mp.get_property("packet-video-bitrate")
+			arate = mp.get_property("packet-audio-bitrate")
+			trate = vrate + arate
+		else
+			trate = vrate + arate
 		end
+		trate = string.format("%dk ", trate)
+		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
+		if
+			fps == nil then tfps = 0
+		elseif	fps == 1000 then fps = mp.get_property("fps") 
+		end
+		currentfps = mp.get_property("estimated-vf-fps")
+		if currentfps == nil then currentfps = 0 end
+		tfps = string.format("%4.1f", currentfps).."/"..fps
 		ttype = mp.get_property("file-format")
-		if ttype == nil then ttype = "0"
+		if
+			ttype == nil then ttype = "[0]"
+		else
+			ttype = "["..ttype.."]"
 		end
 		local vol = mp.get_property("volume")
-		if vol == nil then vol = "0" 
+		if
+			vol == nil then vol = "vol:0" 
 		end
-		tvol =  string.format("%d", vol)
-		if mp.get_property_bool("mute") then tvol = "mute" 
+		tvol =  string.format(" vol:%d", vol)
+		if
+			mp.get_property_bool("mute") then tvol = " vol:mute" 
 		end
-		tbarlist = ttype .." ".. tmediatitle .." (".. fps ..") c:".. tcache .."KB".. "   ".. ttime .." vol:" .. tvol
+		torgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)..""
+		tcurrentsize = string.format("%d",currentwidth).."x"..string.format("%d",currentheight).." "
+		
+		tbarlist = ttype .. tmediatitle .." ("..torgsize.."->"..tcurrentsize ..trate.." ".. tfps ..") c:".. tcache .."KB".. " ".. ttime .. tvol
 		mp.set_property("options/title", tbarlist )
 --	mp.set_property("options/window-minimized","yes")
 --	aaa = mp.get_property("window-minimized")
@@ -65,44 +99,56 @@ mp.add_periodic_timer(1, (function()
 	end
 end))
 
+function test()
+	print(mp.get_property("options/dheight"))
+	print(mp.get_property("video-out-params/dw"))
+	print(mp.get_property("estimated-vf-fps"))
+	print(string.format("%4.1f", currentfps))
+	print(string.format("%5.1f", currentfps))
+end
+mp.add_key_binding("KP9", "test" , test)
+
 --画面サイズ変更用関数
 function changewindowsize(newwidth , newheight , kurobuti)
 	mp.set_property("vf","dsize=" .. math.floor(newwidth) ..":".. math.floor(newheight) ..":".. kurobuti .."::0")
 	mp.set_property_number("window-scale" , 1)
+	currentwidth = mp.get_property("dwidth")
+	currentheight = mp.get_property("dheight")
 	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
 end
 
 --スクリーンショット
 function screenshot()
-	mp.set_property("options/screenshot-format", sstype )
-	mp.set_property("options/screenshot-jpeg-quality", jpgquality )
-	mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tX_%n")
-	if sssize == 0 then sssize = "window" 
-	else sssize = "video"
+	if mp.get_property("playback-time") ~= nil then
+		mp.set_property("options/screenshot-format", sstype )
+		mp.set_property("options/screenshot-jpeg-quality", jpgquality )
+		mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tX_%n")
+		if sssize == 0 then sssize = "window" 
+		else sssize = "video"
+		end
+		mp.commandv("screenshot" , sssize )
+		mp.osd_message("screenshot")
 	end
-	mp.commandv("screenshot" , sssize )
-	print(ssfolder)
-	print("\""..ssfolder .."%{media-title}_%tX_%n".."\"")
 end
 mp.add_key_binding("p", "screenshot", screenshot)
 
 --ボリューム上げる
 function gainvolume()
 	mp.commandv("add", "volume", volume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Up", "gainvolume", gainvolume)
 mp.add_key_binding("MOUSE_BTN3", "gainvolume_wheel", gainvolume)
 
 function cgainvolume()
 	mp.commandv("add", "volume", ctrlvolume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Ctrl+MOUSE_BTN3", "cgainvolume_wheel", cgainvolume)
 
 function sgainvolume()
 	mp.commandv("add", "volume", shiftvolume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Shift+Up", "sgainvolume", sgainvolume)
 mp.add_key_binding("Shift+MOUSE_BTN3", "sgainvolume_wheel", sgainvolume)
@@ -110,20 +156,20 @@ mp.add_key_binding("Shift+MOUSE_BTN3", "sgainvolume_wheel", sgainvolume)
 --ボリューム下げる
 function reducevolume()
 	mp.commandv("add", "volume", -1 * volume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Down", "reducevolume", reducevolume)
 mp.add_key_binding("MOUSE_BTN4", "reducevolume_wheel", reducevolume)
 
 function creducevolume()
 	mp.commandv("add", "volume", -1 * ctrlvolume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Ctrl+MOUSE_BTN4", "creducevolume_wheel", creducevolume)
 
 function sreducevolume()
 	mp.commandv("add", "volume", -1 * shiftvolume)
-	mp.osd_message(mp.get_property("volume",1))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Shift+Down", "sreducevolume", sreducevolume)
 mp.add_key_binding("Shift+MOUSE_BTN4", "sreducevolume_wheel", sreducevolume)
