@@ -8,10 +8,10 @@ shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
 statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
-showformattype = 1			--flvとかmkvとかwmv(asf)とか表示（未表示は未実装）
+showcontainertype = 1			--flvとかmkvとかwmv(asf)とか表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未実装）
-showfps = 1				--fps表示（実fpsは未実装）
+showfps = 1				--fps表示（未表示は未実装）
 showbitrate = 1				--ビットレート表示（1秒間にdemuxerが処理した量?）（未表示は未実装）
 showcachesize = 1			--キャッシュサイズを表示（未表示は未実装）
 
@@ -25,42 +25,63 @@ ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と�
 
 
 orgwidth , orgheight = 0,0
-function startup()
-    if mp.get_property_number("playlist-count")  < 3 then
-
-	orgwidth  = mp.get_property("width")
-	if orgwidth == nil then orgwidth = 0 end
-	currentwidth = orgwidth
-	orgheight = mp.get_property("height")
-	if orgheight == nil then orgheight = 0 end
-	currentheight = orgheight
-	vrate = 0
-	arate = 0
-	srate = 0
-	if mp.get_property_number("fps") == nil then fps = 0
-	else fps = mp.get_property_number("fps")
-	end
-	fps = string.format("%4.1f", fps)
-	if statusbar == 1 then
-		if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
+mp.set_property("options/volume", initialvolume )
+function errorproof(case)
+	local hantei = nil
+--	print(case)
+	if case == "path" then
+		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil then
+		hantei = 1
+		else hantei = 0
 		end
-	elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
+	elseif case == "start" then
+		if mp.get_property_number("playlist-count")  < 3 then
+		hantei = 1
+		else hantei = 0
+		end
+	elseif case == "playing" then
+		if 	mp.get_property("estimated-vf-fps") ~= nil 
+			or mp.get_property("playback-time") ~= nil
+		then
+		hantei = 1
+		else hantei = 0
+		end
 	end
-	print(mp.get_property("border"))
---	mp.set_property("options/border", "yes")
-	print(mp.get_property("options/border"))
-	mp.set_property("options/volume", initialvolume )
-	mp.set_property("loop", "inf")
-    end	
+	return hantei 
+end
+function startup()
+	if errorproof("playing") == 1 then
+		orgwidth  = mp.get_property("width")
+		if orgwidth == nil then orgwidth = 0 end
+		currentwidth = orgwidth
+		orgheight = mp.get_property("height")
+		if orgheight == nil then orgheight = 0 end
+		currentheight = orgheight
+		vrate = 0
+		arate = 0
+		srate = 0
+		if mp.get_property_number("fps") == nil then fps = 0
+		else fps = mp.get_property_number("fps")
+		end
+		fps = string.format("%4.1f", fps)
+		if statusbar == 1 then
+			if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
+			end
+		elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
+		end
+		print(mp.get_property("border"))
+--		mp.set_property("options/border", "yes")
+		print(mp.get_property("options/border"))
+--		mp.set_property("options/volume", initialvolume )
+		mp.set_property("loop", "inf")
+	else print("notstarted")
+	end	
 end
 mp.register_event("file-loaded", startup)
 
 mp.add_periodic_timer(1, (function ()
 --	if (mp.get_property_bool("core-idle")) ~= "no" then
-	if
-		mp.get_property_number("playback-time") ~= nil
-		and
-		string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil
+	if errorproof("playing") == 1
 	then
 	
 		tmediatitle = mp.get_property("media-title")
@@ -87,20 +108,20 @@ mp.add_periodic_timer(1, (function ()
 		--キャッシュ取得
 		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
 		--fps取得
-		if
-			fps == nil and mp.get_property("fps") == nil then tfps,fps = 0,0
-		elseif	fps == 0 then mp.get_property("fps") 
-		elseif	fps == "1000.0" then fps = "vfr"
+		if errorproof("playing") == 1 then
+			if fps == nil then fps = string.format("%4.1f", mp.get_property("fps"))
+			elseif fps == "1000.0" then fps = "vfr"
+			elseif fps == "0.0" then string.format("%4.1f", mp.get_property("fps"))
+			end
+		else fps = "0.0"
 		end
 		currentfps = mp.get_property("estimated-vf-fps")
 		if currentfps == nil then currentfps = 0 end
 		tfps = string.format("%4.1f", currentfps).."/"..fps
 		--コンテナ取得
 		ttype = mp.get_property("file-format")
-		if
-			ttype == nil then ttype = "[0]"
-		else
-			ttype = "["..ttype.."]"
+		if	ttype == nil then ttype = "[0]"
+		else	ttype = "["..ttype.."]"
 		end
 		--ボリューム取得
 		local vol = mp.get_property("volume")
@@ -108,7 +129,7 @@ mp.add_periodic_timer(1, (function ()
 		end
 		tvol =  string.format(" vol:%d", vol)
 		if
-			mp.get_property_bool("mute") then tvol = " vol:mute" 
+			mp.get_property_bool("mute") then tvol = " vol:-" 
 		end
 		--解像度取得
 		if orgwidth == 0 and mp.get_property("width") ~= nil then orgwidth = mp.get_property("width") end
@@ -122,18 +143,20 @@ mp.add_periodic_timer(1, (function ()
 --	mp.set_property("options/window-minimized","yes")
 --	aaa = mp.get_property("window-minimized")
 --	print(aaa)
+	else print("notplaying")
+		trate = "buffering"
 	end
 end))
 
 function test()
 	print(mp.get_property("video-params/w"))
 	print(mp.get_property("video-params/dw"))
-	print(mp.get_property("dwidth"))
+	print(mp.get_property("fps"))
 	print(mp.get_property("video-out-params/dw"))
 end
 mp.add_key_binding("KP9", "test" , test)
 
---画面サイズ変更用関数
+--画面サイズ変更用
 function changewindowsize(newwidth , newheight , kurobuti)
 	mp.set_property("vf","dsize=" .. math.floor(newwidth) ..":".. math.floor(newheight) ..":".. kurobuti .."::0")
 	mp.set_property_number("window-scale" , 1)
@@ -282,7 +305,7 @@ mp.add_key_binding("Alt+b", "bump" , bump)
 
 --リレー切断
 function stop()
-	if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil then
+	if errorproof("path") == 1 then
 	local streampath,localhost,streamid = getpath()
 	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
 	end
