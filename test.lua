@@ -8,7 +8,7 @@ shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
 statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
-showcontainertype = 1			--flvとかmkvとかwmv(asf)とか表示（未表示は未実装）
+showcontainertype = 1			--ビデオコーデックかコンテナ表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未実装）
 showfps = 1				--fps表示（未表示は未実装）
@@ -67,14 +67,19 @@ function initialize()
 		else fps = mp.get_property_number("fps")
 		end
 		fps = string.format("%4.1f", fps)
+		--ビデオコーデック取得
+--		vcodec = mp.get_property("video-codec")
+		if mp.get_property("track-list/0/type") == "video" then
+			vcodec = mp.get_property("track-list/0/codec")
+		else	vcodec = mp.get_property("track-list/1/codec")
+		end
+		ttype = vcodec
 		--コンテナ取得
-		ttype = mp.get_property("file-format")
+--		ttype = mp.get_property("file-format")
 		if	ttype == nil then ttype = "[0]"
 		else	ttype = "["..ttype.."]"
 		end
-		--ビデオコーデック取得
-		vcodec = mp.get_property("video-codec")
-		print(vcodec)
+
 --		if statusbar == 1 then
 --			if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
 --			end
@@ -106,7 +111,6 @@ end
 mp.add_periodic_timer(1, (function ()
 	if errorproof("playing") == 1 and errorproof("path") == 1
 	then
-	reconnectlua ()
 		tmediatitle = mp.get_property("media-title")
 		ttime = mp.get_property_osd("playback-time")
 		--ビットレート取得
@@ -158,16 +162,35 @@ mp.add_periodic_timer(1, (function ()
 		tbarlist = ttype .. tmediatitle .." ("..torgsize..""..tcurrentsize.." " ..trate.."".. tfps ..") c:".. tcache .."KB".. " ".. ttime .. tvol
 		mp.set_property("options/title", tbarlist )
 
-	else print("notplaying")
-		trate = "buffering"
+	else 
+		if errorproof("path") == 1 then reconnectlua () end
 	end
 end))
 
+--再生スピードでキャッシュ量調整（重くなるかも）
+function autospeed(name, value)
+	if 	value > 1000 then
+		mp.set_property("speed", 1.05)
+	elseif 	value < 500 then
+		mp.set_property("speed", 1.00)
+	elseif	value < 100 then
+		mp.set_property("speed", 0.95)
+	end
+end
+mp.observe_property("cache-used", "number", autospeed)
+
+function mutewhenminimize(name, value)
+if value == true then
+mp.set_property("screen", 32)
+end
+end
+mp.observe_property("mute", "bool", mutewhenminimize)
+
 function test()
 	print(mp.get_property("video-params/w"))
-	print(mp.get_property("video-params/dw"))
+	print(mp.get_property("time-pos"))
 	print(mp.get_property("fps"))
-	print(mp.get_property("video-out-params/dw"))
+	print(mp.get_property("speed"))
 end
 mp.add_key_binding("KP9", "test" , test)
 
