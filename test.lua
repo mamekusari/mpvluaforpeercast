@@ -7,7 +7,7 @@ ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 showcontainertype = 1			--flvとかmkvとかwmv(asf)とか表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未実装）
@@ -35,7 +35,7 @@ function errorproof(case)
 		else hantei = 0
 		end
 	elseif case == "start" then
-		if mp.get_property_number("playlist-count")  < 3 then
+		if mp.get_property_number("playlist-count")  < 2 then
 		hantei = 1
 		else hantei = 0
 		end
@@ -49,8 +49,9 @@ function errorproof(case)
 	end
 	return hantei 
 end
-function startup()
-	if errorproof("playing") == 1 then
+function initialize()
+--	if errorproof("strat") == 1 then
+--		print("initialize")
 		orgwidth  = mp.get_property("width")
 		if orgwidth == nil then orgwidth = 0 end
 		currentwidth = orgwidth
@@ -74,16 +75,31 @@ function startup()
 		print(mp.get_property("options/border"))
 --		mp.set_property("options/volume", initialvolume )
 		mp.set_property("loop", "inf")
-	else print("notstarted")
-	end	
+--	else print("notstarted")
+--	end	
 end
-mp.register_event("file-loaded", startup)
+mp.register_event("file-loaded", initialize)
+
+
+local timer = mp.get_time()
+function reconnectlua ()
+	  if mp.get_property_bool("core-idle") then
+    if mp.get_time() - timer >= 20 then
+      timer = mp.get_time()
+      mp.osd_message("reconnect",3)
+      print("reconnect")
+      mp.commandv("playlist_next")
+    end
+  else
+    timer = mp.get_time()
+  end
+end
 
 mp.add_periodic_timer(1, (function ()
 --	if (mp.get_property_bool("core-idle")) ~= "no" then
 	if errorproof("playing") == 1
 	then
-	
+	reconnectlua ()
 		tmediatitle = mp.get_property("media-title")
 		ttime = mp.get_property_osd("playback-time")
 		--ビットレート取得
@@ -292,7 +308,7 @@ mp.add_key_binding("t", "ontop", ontop)
 
 --リレー再接続
 function bump()
-	if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil then
+	if errorproof("path") == 1 then
 	local streampath,localhost,streamid = getpath()
 	mp.commandv("playlist_clear")
 	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
