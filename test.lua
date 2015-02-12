@@ -50,33 +50,41 @@ function errorproof(case)
 	return hantei 
 end
 function initialize()
---	if errorproof("strat") == 1 then
---		print("initialize")
+	if errorproof("path") == 1 then
+		print("initialize")
+		vrate,arate,srate = 0,0,0
+		--動画サイズ取得
 		orgwidth  = mp.get_property("width")
 		if orgwidth == nil then orgwidth = 0 end
 		currentwidth = orgwidth
 		orgheight = mp.get_property("height")
 		if orgheight == nil then orgheight = 0 end
-		currentheight = orgheight
-		vrate = 0
-		arate = 0
-		srate = 0
+	--	currentheight = orgheight
+--		orgwidth,orgheight = 0,0
+--		fps = "0.0"
+		--fps取得
 		if mp.get_property_number("fps") == nil then fps = 0
 		else fps = mp.get_property_number("fps")
 		end
 		fps = string.format("%4.1f", fps)
-		if statusbar == 1 then
-			if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
-			end
-		elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
+		--コンテナ取得
+		ttype = mp.get_property("file-format")
+		if	ttype == nil then ttype = "[0]"
+		else	ttype = "["..ttype.."]"
 		end
-		print(mp.get_property("border"))
---		mp.set_property("options/border", "yes")
-		print(mp.get_property("options/border"))
---		mp.set_property("options/volume", initialvolume )
+		--ビデオコーデック取得
+		vcodec = mp.get_property("video-codec")
+		print(vcodec)
+--		if statusbar == 1 then
+--			if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
+--			end
+--		elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
+--		end
+--		print(mp.get_property("border"))
+--		print(mp.get_property("options/border"))
 		mp.set_property("loop", "inf")
---	else print("notstarted")
---	end	
+	else print("notpecapath")
+	end	
 end
 mp.register_event("file-loaded", initialize)
 
@@ -96,8 +104,7 @@ function reconnectlua ()
 end
 
 mp.add_periodic_timer(1, (function ()
---	if (mp.get_property_bool("core-idle")) ~= "no" then
-	if errorproof("playing") == 1
+	if errorproof("playing") == 1 and errorproof("path") == 1
 	then
 	reconnectlua ()
 		tmediatitle = mp.get_property("media-title")
@@ -124,41 +131,33 @@ mp.add_periodic_timer(1, (function ()
 		--キャッシュ取得
 		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
 		--fps取得
-		if errorproof("playing") == 1 then
-			if fps == nil then fps = string.format("%4.1f", mp.get_property("fps"))
-			elseif fps == "1000.0" then fps = "vfr"
-			elseif fps == "0.0" then string.format("%4.1f", mp.get_property("fps"))
-			end
-		else fps = "0.0"
-		end
+--		if errorproof("playing") == 1 then
+--			if fps == nil then fps = string.format("%4.1f", mp.get_property("fps"))
+--			elseif fps == "1000.0" then fps = "vfr"
+--			elseif fps == "0.0" then string.format("%4.1f", mp.get_property("fps"))
+--			end
+--		else fps = "0.0"
+--		end
 		currentfps = mp.get_property("estimated-vf-fps")
 		if currentfps == nil then currentfps = 0 end
 		tfps = string.format("%4.1f", currentfps).."/"..fps
-		--コンテナ取得
-		ttype = mp.get_property("file-format")
-		if	ttype == nil then ttype = "[0]"
-		else	ttype = "["..ttype.."]"
-		end
 		--ボリューム取得
 		local vol = mp.get_property("volume")
-		if vol == nil then vol = 0
-		end
+--		if vol == nil then vol = 0
+--		end
 		tvol =  string.format(" vol:%d", vol)
 		if
 			mp.get_property_bool("mute") then tvol = " vol:-" 
 		end
 		--解像度取得
-		if orgwidth == 0 and mp.get_property("width") ~= nil then orgwidth = mp.get_property("width") end
-		if orgheight == 0 and mp.get_property("height") ~= nil then orgheight  = mp.get_property("height") end	
-		torgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)..""
---		mp.set_property("vf", "dsize=0:0")
+--		if orgwidth == 0 and mp.get_property("width") ~= nil then orgwidth = mp.get_property("width") end
+--		if orgheight == 0 and mp.get_property("height") ~= nil then orgheight  = mp.get_property("height") end
 		tcurrentsize = ""--string.format("%d",currentwidth).."x"..string.format("%d",currentheight).." "
+		torgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)..""
 		--まとめてタイトルバーに表示
 		tbarlist = ttype .. tmediatitle .." ("..torgsize..""..tcurrentsize.." " ..trate.."".. tfps ..") c:".. tcache .."KB".. " ".. ttime .. tvol
 		mp.set_property("options/title", tbarlist )
---	mp.set_property("options/window-minimized","yes")
---	aaa = mp.get_property("window-minimized")
---	print(aaa)
+
 	else print("notplaying")
 		trate = "buffering"
 	end
@@ -194,7 +193,7 @@ end
 
 --スクリーンショット
 function screenshot()
-	if mp.get_property("playback-time") ~= nil then
+	if errorproof("playing") == 1 then
 		mp.set_property("options/screenshot-format", sstype )
 		mp.set_property("options/screenshot-jpeg-quality", jpgquality )
 		mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tX_%n")
