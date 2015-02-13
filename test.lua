@@ -1,5 +1,6 @@
 --ショートカットをpeerstplayerに似せたlua
 
+--初期設定
 --ボリューム関係
 initialvolume = 11			--初期ボリューム
 volume = 5				--マウスホイールの変更量
@@ -7,7 +8,7 @@ ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 showcontainertype = 1			--ビデオコーデックかコンテナ表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未実装）
@@ -21,52 +22,154 @@ jpgquality = 90				--jpgの時の画質。0-100
 sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と最後の\\は必須
 
+--その他
+cursorhide = 1				--マウスカーソルを隠す。2はフルスクリーンのみ隠すの予定
+
+
+--キーバインド				--（）内はデフォルト
+--音関係
+kvolup = "Up"				--ボリュームアップ（↑キー）
+kvoldown = "Down"			--ボリュームダウン（↓キー）
+kvolup_wheel = "MOUSE_BTN3"		--ボリュームアップ2つめ（ホイール↑）
+kvoldown_wheel = "MOUSE_BTN4"		--ボリュームダウン2つめ（ホイール↓）
+kvolup2 = "Ctrl+MOUSE_BTN3"		--中ボリュームアップ（ctrl押しながらホイール↑）
+kvoldown2 = "Ctrl+MOUSE_BTN4"		--中ボリュームダウン（ctrl押しながらホイール↓）
+kvolup3 = "Shift+MOUSE_BTN3"		--小ボリュームアップ（shift押しながらホイール↑）
+kvoldown3 = "Shift+MOUSE_BTN4"		--小ボリュームダウン（shift押しながらホイール↓）
+kpanleft = "Ctrl+Left"			--音声を左のみに（ctrl押しながら←）
+kpanright = "Ctrl+Right"		--音声を右のみに（ctrl押しながら→）
+kpancenter = "Ctrl+Up"			--音声をモノラルに（ctrl押しながら↑）
+kpanstereo = "Ctrl+Down"		--音声を普通のステレオに（ctrl押しながら↓）
+kmute = "MOUSE_BTN1"			--ミュート（マウス中クリック）
+
+--プレイヤーの状態
+--kminimize = "未実装"
+kfullscreen = "Alt+Enter"		--フルスクリーン（alt押しながらenter）
+kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
+--kminmute = "未実装"
+kexit = "Esc"				--終了（escape）
+kontop = "t"				--最前面表示（t）
+
+--リレー操作
+kstop = "Alt+x"				--リレー切断（alt押しながらx）
+kbump = "Alt+b"				--リレー再接続（alt押しながらb）
+
+--スクリーンショット
+kscreenshot = "p"			--スクリーンショットキー（p）
+
+--ウィンドウサイズ変更
+--ウィンドウサイズ基準
+k160x120 = "Alt+1"
+k320x240 = "Alt+2"
+k480x360 = "Alt+3"
+k640x480 = "Alt+4"
+k800x600 = "Alt+5"
+k1280x960 = "Alt+6"
+k1600x1200 = "Alt+7"
+k1920x1440 = "Alt+8"
+--動画サイズ基準
+k50 = "1"
+k75 = "2"
+k100 = "3"
+k150 = "4"
+k200 = "5"
+k250 = "6"
+k300 = "7"
+k25 = "8"
 
 
 
 orgwidth , orgheight = 0,0
 mp.set_property("options/volume", initialvolume )
+if cursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
+elseif corsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
+end
+	if statusbar == 1 then
+		if mp.get_property("border") == "no" then mp.set_property("options/border", "yes")
+		end
+	elseif mp.get_property("border") == "yes" then mp.set_property("options/border", "no")
+	end
+print(mp.get_property("options/cursor-autohide"))
+print(mp.get_property("options/border"))
+
+
 function errorproof(case)
 	local hantei = nil
 --	print(case)
-	if case == "path" then
+	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil then
 		hantei = 1
 		else hantei = 0
 		end
-	elseif case == "start" then
+	elseif 	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 2 then
 		hantei = 1
 		else hantei = 0
 		end
-	elseif case == "playing" then
+	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps") ~= nil 
 			or mp.get_property("playback-time") ~= nil
+			or mp.get_property("demuxer-cache-duration") ~= nil
 		then
 		hantei = 1
 		else hantei = 0
 		end
+	elseif	case == "audioonly" then
+		if 	mp.get_property("aid") == nil then
+			hantei = 1
+			else hantei = 0
+		end
+	elseif case == "errordata" then
+		if	mp.get_property("track-list/2/codec") ~= nil then
+			hantei = 1
+			else hantei = 0
+		end
 	end
-	return hantei 
+	return	hantei 
 end
+
+function errordata()
+	
+		mp.commandv("playlist-next", "force")
+	
+end
+
+function avsync(value)
+--	if	value > 1 then
+--		mp.commandv("drop_buffers")
+--	end
+print(value)
+end
+--mp.observe_property("avsync", "number", avsync)
+
+function cacheerror(value)
+local a = mp.get_property_number("demuxer-cache-duration")
+	if a ~= nil and a > 3 then
+--		mp.commandv("drop_buffers")
+		mp.commandv("playlist-next", "force")
+	end
+end
+mp.observe_property("demuxer-cache-duration", "number", cacheerror)
+
 function initialize()
+	if errorproof("errordata") == 1 then errordata()
+	end
 	if errorproof("path") == 1 then
 		print("initialize")
 		vrate,arate,srate = 0,0,0
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width")
-		if orgwidth == nil then orgwidth = 0 end
-		currentwidth = orgwidth
-		orgheight = mp.get_property("height")
-		if orgheight == nil then orgheight = 0 end
-	--	currentheight = orgheight
---		orgwidth,orgheight = 0,0
---		fps = "0.0"
-		--fps取得
-		if mp.get_property_number("fps") == nil then fps = 0
-		else fps = mp.get_property_number("fps")
+		if orgwidth == nil then orgwidth = 0
 		end
-		fps = string.format("%4.1f", fps)
+		orgheight = mp.get_property("height")
+		if orgheight == nil then orgheight = 0
+		end
+		--fps取得
+		fps = mp.get_property_number("fps")
+		if 	fps == nil then fps = "0.0"
+			elseif fps == 1000 then fps = "vfr"
+			else fps = string.format("%4.1f", fps)
+		end
 		--ビデオコーデック取得
 --		vcodec = mp.get_property("video-codec")
 		if mp.get_property("track-list/0/type") == "video" then
@@ -79,20 +182,11 @@ function initialize()
 		if	ttype == nil then ttype = "[0]"
 		else	ttype = "["..ttype.."]"
 		end
-
---		if statusbar == 1 then
---			if mp.get_property("border") == "no" then mp.commandv("cycle" , "border")
---			end
---		elseif mp.get_property("border") == "yes" then mp.commandv("cycle" , "border")
---		end
---		print(mp.get_property("border"))
---		print(mp.get_property("options/border"))
 		mp.set_property("loop", "inf")
 	else print("notpecapath")
 	end	
 end
 mp.register_event("file-loaded", initialize)
-
 
 local timer = mp.get_time()
 function reconnectlua ()
@@ -109,8 +203,10 @@ function reconnectlua ()
 end
 
 mp.add_periodic_timer(1, (function ()
-	if errorproof("playing") == 1 and errorproof("path") == 1
+	if errorproof("playing") == 1 and errorproof("path") == 1 and errorproof("firststart") == 0
 	then
+	print("timerstart")
+		if errorproof("errordata") == 1 then errordata() end
 		tmediatitle = mp.get_property("media-title")
 		ttime = mp.get_property_osd("playback-time")
 		--ビットレート取得
@@ -124,7 +220,7 @@ mp.add_periodic_timer(1, (function ()
 			trate = vrate + arate
 		end
 		if srate == nil then srate = 0 end 
-		if srate == 0 then 
+		if 	srate == 0 then 
 			srate = mp.get_property("stream-pos")
 			trate = srate /1024 * 8
 		else
@@ -133,58 +229,54 @@ mp.add_periodic_timer(1, (function ()
 		end
 		trate = string.format("%4dk ", trate)
 		--キャッシュ取得
-		tcache = string.format("%03d" , mp.get_property("cache-used", 0))
-		--fps取得
---		if errorproof("playing") == 1 then
---			if fps == nil then fps = string.format("%4.1f", mp.get_property("fps"))
---			elseif fps == "1000.0" then fps = "vfr"
---			elseif fps == "0.0" then string.format("%4.1f", mp.get_property("fps"))
---			end
---		else fps = "0.0"
---		end
+		cache = mp.get_property_number("cache-used", 0)
+		tcache = string.format("%03d" , cache)
+		--現在fps取得
 		currentfps = mp.get_property("estimated-vf-fps")
 		if currentfps == nil then currentfps = 0 end
 		tfps = string.format("%4.1f", currentfps).."/"..fps
 		--ボリューム取得
 		local vol = mp.get_property("volume")
---		if vol == nil then vol = 0
---		end
+		if errorproof("audioonly") == 1 then vol = 0 end
+		if vol == nil then vol = 0
+		end
 		tvol =  string.format(" vol:%d", vol)
 		if
 			mp.get_property_bool("mute") then tvol = " vol:-" 
 		end
 		--解像度取得
---		if orgwidth == 0 and mp.get_property("width") ~= nil then orgwidth = mp.get_property("width") end
---		if orgheight == 0 and mp.get_property("height") ~= nil then orgheight  = mp.get_property("height") end
 		tcurrentsize = ""--string.format("%d",currentwidth).."x"..string.format("%d",currentheight).." "
 		torgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)..""
 		--まとめてタイトルバーに表示
 		tbarlist = ttype .. tmediatitle .." ("..torgsize..""..tcurrentsize.." " ..trate.."".. tfps ..") c:".. tcache .."KB".. " ".. ttime .. tvol
 		mp.set_property("options/title", tbarlist )
-
+		autospeed("",cache)
+		print("timerend")
 	else 
-		if errorproof("path") == 1 then reconnectlua () end
+		if errorproof("path") == 1 then reconnectlua() 
+		end
+		print("buffer?")
 	end
 end))
 
---再生スピードでキャッシュ量調整（重くなるかも）
+--キャッシュ量を再生スピードで調整
 function autospeed(name, value)
-	if 	value > 1000 then
-		mp.set_property("speed", 1.05)
-	elseif 	value < 500 then
-		mp.set_property("speed", 1.00)
-	elseif	value < 100 then
-		mp.set_property("speed", 0.95)
+	if errorproof("playing") == 1 then
+		if 	value > 200 and value < 300 then
+			mp.set_property("speed", 1.00)
+		elseif	value < 10 then
+			mp.set_property("speed", 0.99)
+		elseif 	value > 1000 then
+			mp.set_property("speed", 1.01)
+		elseif mp.get_property("speed") == 0.99 and value > 200 then
+			mp.set_property("speed", 1.00)
+		elseif mp.get_property("speed") == 1.01 and value < 300 then
+			mp.set_property("speed", 1.00)
+		end
 	end
 end
-mp.observe_property("cache-used", "number", autospeed)
+--mp.observe_property("cache-used", "number", autospeed)
 
-function mutewhenminimize(name, value)
-if value == true then
-mp.set_property("screen", 32)
-end
-end
-mp.observe_property("mute", "bool", mutewhenminimize)
 
 function test()
 	print(mp.get_property("video-params/w"))
@@ -227,49 +319,59 @@ function screenshot()
 		mp.osd_message("screenshot")
 	end
 end
-mp.add_key_binding("p", "screenshot", screenshot)
+mp.add_key_binding(kscreenshot, "screenshot", screenshot)
 
 --ボリューム上げる
 function gainvolume()
 	mp.commandv("add", "volume", volume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
-mp.add_key_binding("Up", "gainvolume", gainvolume)
-mp.add_key_binding("MOUSE_BTN3", "gainvolume_wheel", gainvolume)
+mp.add_key_binding(kvolup, "gainvolume", gainvolume)
+mp.add_key_binding(kvolup_wheel, "gainvolume_wheel", gainvolume)
 
 function cgainvolume()
 	mp.commandv("add", "volume", ctrlvolume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
-mp.add_key_binding("Ctrl+MOUSE_BTN3", "cgainvolume_wheel", cgainvolume)
+mp.add_key_binding(kvolup2, "cgainvolume_wheel", cgainvolume)
 
 function sgainvolume()
 	mp.commandv("add", "volume", shiftvolume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Shift+Up", "sgainvolume", sgainvolume)
-mp.add_key_binding("Shift+MOUSE_BTN3", "sgainvolume_wheel", sgainvolume)
+mp.add_key_binding(kvolup3, "sgainvolume_wheel", sgainvolume)
 
 --ボリューム下げる
 function reducevolume()
 	mp.commandv("add", "volume", -1 * volume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
-mp.add_key_binding("Down", "reducevolume", reducevolume)
-mp.add_key_binding("MOUSE_BTN4", "reducevolume_wheel", reducevolume)
+mp.add_key_binding(kvoldown, "reducevolume", reducevolume)
+mp.add_key_binding(kvoldown_wheel, "reducevolume_wheel", reducevolume)
 
 function creducevolume()
 	mp.commandv("add", "volume", -1 * ctrlvolume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
-mp.add_key_binding("Ctrl+MOUSE_BTN4", "creducevolume_wheel", creducevolume)
+mp.add_key_binding(kvoldown2, "creducevolume_wheel", creducevolume)
 
 function sreducevolume()
 	mp.commandv("add", "volume", -1 * shiftvolume)
 	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
 end
 mp.add_key_binding("Shift+Down", "sreducevolume", sreducevolume)
-mp.add_key_binding("Shift+MOUSE_BTN4", "sreducevolume_wheel", sreducevolume)
+mp.add_key_binding(kvoldown3, "sreducevolume_wheel", sreducevolume)
+
+--ミュート
+function mute()
+	mp.commandv("cycle", "mute")
+	if mp.get_property("mute") == "yes" then
+		mp.osd_message("mute",3)
+	else	mp.osd_message("mute_off",3)
+	end
+end
+mp.add_key_binding( kmute, "mute", mute)
 
 --音声を左のみに
 function panleft()
@@ -278,7 +380,7 @@ function panleft()
 	else mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
 end
-mp.add_key_binding("Ctrl+Left", "panleft", panleft)
+mp.add_key_binding(kpanleft, "panleft", panleft)
 
 --音声を右のみに
 function panright()
@@ -286,37 +388,37 @@ function panright()
 	mp.set_property("af", "pan=2:[ 1 , 1 ]") end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
 end
-mp.add_key_binding("Ctrl+Right", "panright", panright)
+mp.add_key_binding(kpanright, "panright", panright)
 
 --音声を中央（モノラル）に
 function pancenter()
 	mp.set_property("af", "pan=1:[ 1 , 1 ]")
 end
-mp.add_key_binding("Ctrl+Up", "pancenter", pancenter)
+mp.add_key_binding(kpancenter, "pancenter", pancenter)
 
 --音声を普通のステレオに
 function panrestore()
 	mp.set_property("af", "channels=2")
 end
-mp.add_key_binding("Ctrl+Down", "panrestore", panrestore)
+mp.add_key_binding(kpanstereo, "panrestore", panrestore)
 
 --フルスクリーン
 function fullscreen()
 	mp.commandv("cycle" , "fullscreen")
 end
-mp.add_key_binding("Alt+Enter", "fullscreen", fullscreen)
+mp.add_key_binding(kfullscreen, "fullscreen", fullscreen)
 
 --終了
 function exit()
 	mp.commandv("quit")
 end
-mp.add_key_binding("Esc", "exit", exit)
+mp.add_key_binding(kexit, "exit", exit)
 
 --ステータスバーの代わり
 function titlebar()
 	mp.commandv("cycle" , "border")
 end
-mp.add_key_binding("Enter", "titlebar", titlebar)
+mp.add_key_binding(kstatusbar, "titlebar", titlebar)
 
 --最前面表示切り替え
 function ontop()
@@ -326,7 +428,7 @@ function ontop()
 	else mp.osd_message("ontop_off")
 	end
 end
-mp.add_key_binding("t", "ontop", ontop)
+mp.add_key_binding(kontop, "ontop", ontop)
 
 --リレー再接続
 function bump()
@@ -339,7 +441,7 @@ function bump()
 	mp.osd_message("bump",3)
 	end
 end
-mp.add_key_binding("Alt+b", "bump" , bump)
+mp.add_key_binding(kbump, "bump" , bump)
 
 --リレー切断
 function stop()
@@ -348,101 +450,101 @@ function stop()
 	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
 	end
 end
-mp.add_key_binding("Alt+x", "stop" , stop)
+mp.add_key_binding(kstop, "stop" , stop)
 
 --ここからwindowサイズ変更
 function to50per()
 	local targetsize = 0.5
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("1", "50%", to50per)
+mp.add_key_binding(k50, "50%", to50per)
 
 function to75per()
 	local targetsize = 0.75
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("2", "75%", to75per)
+mp.add_key_binding(k75, "75%", to75per)
 
 function to100per()
 	local targetsize = 1
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("3", "100%", to100per)
+mp.add_key_binding( k100, "100%", to100per)
 
 function to150per()
 	local targetsize = 1.5
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("4", "150%", to150per)
+mp.add_key_binding( k150, "150%", to150per)
 
 function to200per()
 	local targetsize = 2
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("5", "200%", to200per)
+mp.add_key_binding( k200, "200%", to200per)
 
 function to250per()
 	local targetsize = 2.5
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("6", "250%", to250per)
+mp.add_key_binding( k250, "250%", to250per)
 
 function to300per()
 	local targetsize = 3
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("7", "300%", to300per)
+mp.add_key_binding( k300, "300%", to300per)
 
 function to25per()
 	local targetsize = 0.25
 	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
 end
-mp.add_key_binding("8", "25%", to25per)
+mp.add_key_binding( k25, "25%", to25per)
 
 function to160x120()
 	local targetsize = {160 , 120}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+1", "160x120", to160x120)
+mp.add_key_binding( k160x120, "160x120", to160x120)
 
 function to320x240()
 	local targetsize = {320 , 240}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+2", "320x240", to320x240)
+mp.add_key_binding( k320x240, "320x240", to320x240)
 
 function to480x360()
 	local targetsize = {480 , 360}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+3", "480x360", to480x360)
+mp.add_key_binding( k480x360, "480x360", to480x360)
 
 function to640x480()
 	local targetsize = {640 , 480}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+4", "640x480", to640x480)
+mp.add_key_binding( k640x480, "640x480", to640x480)
 
 function to800x600()
 	local targetsize = {800 , 600}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+5", "800x600", to800x600)
+mp.add_key_binding( k800x600, "800x600", to800x600)
 
 function to1280x960()
 	local targetsize = {1280 , 960}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+6", "1280x960", to1280x960)
+mp.add_key_binding( k1280x960, "1280x960", to1280x960)
 
 function to1600x1200()
 	local targetsize = {1600 , 1200}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+7", "1600x1200", to1600x1200)
+mp.add_key_binding( k1600x1200, "1600x1200", to1600x1200)
 
 function to1920x1440()
 	local targetsize = {1920 , 1440}
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
-mp.add_key_binding("Alt+8", "1920x1440", to1920x1440)
+mp.add_key_binding( k1920x1440, "1920x1440", to1920x1440)
