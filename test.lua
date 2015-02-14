@@ -8,12 +8,12 @@ ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 showcontainertype = 1			--ビデオコーデックかコンテナ表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未表示は未実装）
 showfps = 1				--fps表示（未表示は未実装）
-showbitrate = 1				--ビットレート表示（1秒間にdemuxerが処理した量?）（未表示は未実装）
+showbitrate = 1				--大体のビットレート表示（未表示は未実装）
 showcachesize = 1			--キャッシュサイズを表示（未表示は未実装）
 
 --スクリーンショット関係
@@ -81,13 +81,14 @@ k25 = "8"
 
 orgwidth , orgheight = 0,0
 mp.set_property("options/volume", initialvolume )
+tbarlist = mp.get_property("options/title")
 if cursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
 elseif corsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
 end
 	if statusbar == 1 then
-		if mp.get_property("border") == "no" then mp.set_property("options/border", "yes")
+		if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
 		end
-	elseif mp.get_property("border") == "yes" then mp.set_property("options/border", "no")
+	elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
 	end
 print(mp.get_property("options/cursor-autohide"))
 print(mp.get_property("options/border"))
@@ -101,7 +102,7 @@ function errorproof(case)
 		hantei = 1
 		else hantei = 0
 		end
-	elseif 	case == "firststart" then
+	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
 		hantei = 1
 		else hantei = 0
@@ -109,12 +110,12 @@ function errorproof(case)
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			or mp.get_property("playback-time") 
-			or mp.get_property_number("demuxer-cache-duration") <= 0.5
+			or mp.get_property_number("demuxer-cache-duration")
 		then
 		hantei = 1
 		else hantei = 0
 		end
-	elseif	case == "audioonly" then
+	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
 			hantei = 1
 			else hantei = 0
@@ -124,13 +125,16 @@ function errorproof(case)
 			hantei = 1
 			else hantei = 0
 		end
+	elseif	not mp.get_property(case) then
+		hantei = 1
 	end
 	return	hantei 
 end
 
 function errordata()
 	
-		mp.commandv("playlist-next", "force")
+--		mp.commandv("playlist-next", "force")
+	bump()
 		print("errordata")
 	
 end
@@ -153,8 +157,17 @@ end
 mp.observe_property("demuxer-cache-duration", "number", cacheerror)
 
 function timer()
-	if errorproof("playing") == 1 and errorproof("path") == 1 and errorproof("firststart") == 0
-	then
+	if 	errorproof("playing") == 1 and errorproof("firststart") == 0
+		then	mp.add_timeout(0.8, getstatus)
+		mp.set_property("options/title", tbarlist )
+	else 
+		if errorproof("path") == 1 then reconnectlua() 
+		end
+		print("buffer?")
+	end
+end
+
+function getstatus()
 	print("timerstart")
 --		if errorproof("errordata") == 1 then errordata()
 --		end
@@ -165,7 +178,7 @@ function timer()
 		mp.add_timeout(0.01 , getcache)
 		if not cache then cache = 0
 		end
-		tcache = string.format("%03d" , cache)
+		tcache = string.format("c:%03dKB" , cache)
 		--ビットレート取得
 		if
 			vrate ~= mp.get_property("packet-video-bitrate")
@@ -182,7 +195,7 @@ function timer()
 			srate = mp.get_property("stream-pos")
 			trate = srate /1024 * 8
 		else
-			trate = (mp.get_property("stream-pos") - srate) /1024 * 8
+			trate = (trate + (mp.get_property("stream-pos") - srate) /1024 * 8)/2
 			srate = mp.get_property("stream-pos")
 		end
 		trate = string.format("%4dk ", trate)
@@ -195,7 +208,7 @@ function timer()
 		tfps = string.format("%4.1f", currentfps).."/"..fps
 		--ボリューム取得
 		local vol = mp.get_property("volume")
-		if errorproof("audioonly") == 1 then vol = 0
+		if errorproof("videoonly") == 1 then vol = 0
 		end
 		if not vol then vol = 0
 		end
@@ -207,24 +220,26 @@ function timer()
 		currentwidth , currentheight = mp.get_property("osd-width"), mp.get_property("osd-height")
 		if not currentwidth then currentwidth, currentheight = 0,0
 		end
-		tcurrentsize = string.format("%d",currentwidth).."x"..string.format("%d",currentheight).." "
-		torgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)..""
+		currentsize = string.format("%d",currentwidth).."x"..string.format("%d",currentheight)
+		if 	currentsize == orgsize then tsize = currentsize
+		else	tsize = orgsize..">"..currentsize.." "
+		end
 		--まとめてタイトルバーに表示
-		tbarlist = ttype .. tmediatitle .." ("..torgsize..">"..tcurrentsize.." " ..trate.."".. tfps ..") c:".. tcache .."KB".. " ".. ttime .. tvol
-		mp.set_property("options/title", tbarlist )
+		tbarlist = ttype .. tmediatitle .." ("..tsize.." " ..trate.."".. tfps ..") ".. tcache .. " ".. ttime .. tvol
 		autospeed("",cache)
 		print("timerend")
 --		mp.add_timeout(0.5, on)
-	else 
-		if errorproof("path") == 1 then reconnectlua() 
-		end
-		print("buffer?")
-	end
+--	else 
+--		if errorproof("path") == 1 then reconnectlua() 
+--		end
+--		print("buffer?")
+--	end
 end
 
+--ファイル情報取得とタイマースタート
 function initialize()
 	if errorproof("errordata") == 1 then errordata()
-	end
+	else
 	if errorproof("path") == 1 then
 		print("initialize")
 		vrate,arate,srate = 0,0,0
@@ -235,6 +250,7 @@ function initialize()
 		orgheight = mp.get_property("height")
 		if not orgheight then orgheight = 0
 		end
+		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
 		--fps取得
 		fps = mp.get_property_number("fps")
 		if 	not fps then fps = "0.0"
@@ -257,18 +273,21 @@ function initialize()
 		mp.add_periodic_timer(1, timer)
 	else print("notpecapath")
 	end	
+	end
 end
 mp.register_event("file-loaded", initialize)
 
+--キャッシュ取得用
 function getcache()
 	if mp.get_property("paused-for-cache") == "no" then
 	cache = mp.get_property_number("cache-used", 0)
 	else
-	print("cantgetcache")
+	print("getcachefail")
 	end
 --	return a
 end
 
+--reconnect.luaとりあえずそのまま持ってきた
 local timer = mp.get_time()
 function reconnectlua ()
 	  if mp.get_property_bool("core-idle") then
@@ -286,7 +305,7 @@ end
 
 --キャッシュ量を再生スピードで調整
 function autospeed(name, value)
-	if errorproof("playing") == 1 then
+	if errorproof("playing") == 1 and errorproof("\"cache-used\"") == 1 then
 		if 	value > 200 and value < 300 then
 			mp.set_property("speed", 1.00)
 		elseif	value < 10 and mp.get_property_number("demuxer-cache-duration") <= 1.2 then
@@ -309,9 +328,8 @@ function test()
 	print(mp.get_property("fps"))
 	print(mp.get_property("speed"))
 	print(mp.get_property("demuxer-cache-duration"))
-	mp.set_property("osd-width", "400")
-	mp.commandv("set" , "osd-width" , "500")
-	mp.commandv("set" , "osd-height" , "500")
+	print(errorproof("\"cache-used\""))
+
 end
 mp.add_key_binding("KP9", "test" , test)
 
