@@ -8,10 +8,10 @@ ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
 --ステータス表示
-statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+statusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 showcontainertype = 1			--ビデオコーデックかコンテナ表示（未表示は未実装）
-showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
-showsoucesize = 1			--動画の元のサイズを表示（未実装）
+showwindowsize = 1			--表示動画サイズを表示（未実装）
+showsoucesize = 1			--動画の元のサイズを表示（未表示は未実装）
 showfps = 1				--fps表示（未表示は未実装）
 showbitrate = 1				--ビットレート表示（1秒間にdemuxerが処理した量?）（未表示は未実装）
 showcachesize = 1			--キャッシュサイズを表示（未表示は未実装）
@@ -23,7 +23,7 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と最後の\\は必須
 
 --その他
-cursorhide = 1				--マウスカーソルを隠す。2はフルスクリーンのみ隠すの予定
+cursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
 
 
 --キーバインド				--（）内はデフォルト
@@ -97,30 +97,30 @@ function errorproof(case)
 	local hantei = nil
 --	print(case)
 	if 	case == "path" then
-		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) ~= nil then
+		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
 		hantei = 1
 		else hantei = 0
 		end
 	elseif 	case == "firststart" then
-		if mp.get_property_number("playlist-count")  < 2 then
+		if mp.get_property_number("playlist-count")  < 3 then
 		hantei = 1
 		else hantei = 0
 		end
 	elseif	case == "playing" then
-		if 	mp.get_property("estimated-vf-fps") ~= nil 
-			or mp.get_property("playback-time") ~= nil
-			or mp.get_property("demuxer-cache-duration") ~= nil
+		if 	mp.get_property("estimated-vf-fps")
+			or mp.get_property("playback-time") 
+			or mp.get_property_number("demuxer-cache-duration") 
 		then
 		hantei = 1
 		else hantei = 0
 		end
 	elseif	case == "audioonly" then
-		if 	mp.get_property("aid") == nil then
+		if 	not mp.get_property("aid") then
 			hantei = 1
 			else hantei = 0
 		end
 	elseif case == "errordata" then
-		if	mp.get_property("track-list/2/codec") ~= nil then
+		if	mp.get_property("track-list/2/codec") then
 			hantei = 1
 			else hantei = 0
 		end
@@ -131,6 +131,7 @@ end
 function errordata()
 	
 		mp.commandv("playlist-next", "force")
+		print("errordata")
 	
 end
 
@@ -159,14 +160,14 @@ function initialize()
 		vrate,arate,srate = 0,0,0
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width")
-		if orgwidth == nil then orgwidth = 0
+		if not orgwidth then orgwidth = 0
 		end
 		orgheight = mp.get_property("height")
-		if orgheight == nil then orgheight = 0
+		if not orgheight then orgheight = 0
 		end
 		--fps取得
 		fps = mp.get_property_number("fps")
-		if 	fps == nil then fps = "0.0"
+		if 	not fps then fps = "0.0"
 			elseif fps == 1000 then fps = "vfr"
 			else fps = string.format("%4.1f", fps)
 		end
@@ -179,7 +180,7 @@ function initialize()
 		ttype = vcodec
 		--コンテナ取得
 --		ttype = mp.get_property("file-format")
-		if	ttype == nil then ttype = "[0]"
+		if	not ttype then ttype = "[0]"
 		else	ttype = "["..ttype.."]"
 		end
 		mp.set_property("loop", "inf")
@@ -202,13 +203,21 @@ function reconnectlua ()
   end
 end
 
+--function status()
+
 mp.add_periodic_timer(1, (function ()
 	if errorproof("playing") == 1 and errorproof("path") == 1 and errorproof("firststart") == 0
 	then
 	print("timerstart")
-		if errorproof("errordata") == 1 then errordata() end
+		if errorproof("errordata") == 1 then errordata()
+		end
 		tmediatitle = mp.get_property("media-title")
 		ttime = mp.get_property_osd("playback-time")
+		--キャッシュ取得
+		cache = mp.get_property_number("cache-used", 0)
+		if not cache then cache = 0
+		end
+		tcache = string.format("%03d" , cache)
 		--ビットレート取得
 		if
 			vrate ~= mp.get_property("packet-video-bitrate")
@@ -219,7 +228,8 @@ mp.add_periodic_timer(1, (function ()
 		else
 			trate = vrate + arate
 		end
-		if srate == nil then srate = 0 end 
+		if 	not srate then srate = 0
+		end 
 		if 	srate == 0 then 
 			srate = mp.get_property("stream-pos")
 			trate = srate /1024 * 8
@@ -228,17 +238,15 @@ mp.add_periodic_timer(1, (function ()
 			srate = mp.get_property("stream-pos")
 		end
 		trate = string.format("%4dk ", trate)
-		--キャッシュ取得
-		cache = mp.get_property_number("cache-used", 0)
-		tcache = string.format("%03d" , cache)
 		--現在fps取得
 		currentfps = mp.get_property("estimated-vf-fps")
-		if currentfps == nil then currentfps = 0 end
+		if not currentfps then currentfps = 0
+		end
 		tfps = string.format("%4.1f", currentfps).."/"..fps
 		--ボリューム取得
 		local vol = mp.get_property("volume")
 		if errorproof("audioonly") == 1 then vol = 0 end
-		if vol == nil then vol = 0
+		if not vol then vol = 0
 		end
 		tvol =  string.format(" vol:%d", vol)
 		if
@@ -252,6 +260,7 @@ mp.add_periodic_timer(1, (function ()
 		mp.set_property("options/title", tbarlist )
 		autospeed("",cache)
 		print("timerend")
+--		mp.add_timeout(0.5, on)
 	else 
 		if errorproof("path") == 1 then reconnectlua() 
 		end
@@ -264,9 +273,9 @@ function autospeed(name, value)
 	if errorproof("playing") == 1 then
 		if 	value > 200 and value < 300 then
 			mp.set_property("speed", 1.00)
-		elseif	value < 10 then
+		elseif	value < 10 and mp.get_property_number("demuxer-cache-duration") < 1 then
 			mp.set_property("speed", 0.99)
-		elseif 	value > 1000 then
+		elseif value > 1000 then
 			mp.set_property("speed", 1.01)
 		elseif mp.get_property("speed") == 0.99 and value > 200 then
 			mp.set_property("speed", 1.00)
@@ -279,12 +288,15 @@ end
 
 
 function test()
-	print(mp.get_property("video-params/w"))
+	print(mp.get_property("osd-width"))
 	print(mp.get_property("time-pos"))
 	print(mp.get_property("fps"))
 	print(mp.get_property("speed"))
+	print(mp.get_property("demuxer-cache-duration"))
 end
 mp.add_key_binding("KP9", "test" , test)
+
+mp.add_timeout(0.5 , test)
 
 --画面サイズ変更用
 function changewindowsize(newwidth , newheight , kurobuti)
@@ -385,7 +397,8 @@ mp.add_key_binding(kpanleft, "panleft", panleft)
 --音声を右のみに
 function panright()
 	if mp.get_property_number("audio-channels") == 1 then
-	mp.set_property("af", "pan=2:[ 1 , 1 ]") end
+	mp.set_property("af", "pan=2:[ 1 , 1 ]") 
+	end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
 end
 mp.add_key_binding(kpanright, "panright", panright)
