@@ -23,7 +23,8 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と最後の\\は必須
 
 --その他
-cursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
+icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
+iontop = 1				--最前面表示
 
 
 --キーバインド				--（）内はデフォルト
@@ -82,8 +83,8 @@ k25 = "8"
 orgwidth , orgheight = 0,0
 mp.set_property("options/volume", initialvolume )
 tbarlist = mp.get_property("options/title")
-if cursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
-elseif corsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
+if icursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
+elseif icorsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
 end
 	if statusbar == 1 then
 		if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
@@ -92,6 +93,7 @@ end
 	end
 print(mp.get_property("options/cursor-autohide"))
 print(mp.get_property("options/border"))
+print(mp.get_property("options/ontop"))
 
 
 function errorproof(case)
@@ -157,88 +159,83 @@ end
 mp.observe_property("demuxer-cache-duration", "number", cacheerror)
 
 function timer()
-	if 	errorproof("playing") == 1 and errorproof("firststart") == 0
-		then	mp.add_timeout(0.8, getstatus)
-		mp.set_property("options/title", tbarlist )
-	else 
-		if errorproof("path") == 1 then reconnectlua() 
+	reconnectlua()
+	if 	errorproof("playing") == 1 and errorproof("firststart") == 0 then
+		if errorproof("errordata") == 0 then
+			mp.set_property("options/title", tbarlist )
+		else	errordata()
 		end
+		mp.add_timeout(0.8, getstatus)
+	else 
 		print("buffer?")
 	end
 end
 
 function getstatus()
-	print("timerstart")
---		if errorproof("errordata") == 1 then errordata()
---		end
-		tmediatitle = mp.get_property("media-title")
-		ttime = mp.get_property_osd("playback-time")
-		--キャッシュ取得
---		cache = mp.get_property_number("cache-used", 0)
-		mp.add_timeout(0.01 , getcache)
-		if not cache then cache = 0
-		end
-		tcache = string.format("c:%03dKB" , cache)
-		--ビットレート取得
-		if
-			vrate ~= mp.get_property("packet-video-bitrate")
-		then
-			vrate = mp.get_property("packet-video-bitrate")
-			arate = mp.get_property("packet-audio-bitrate")
-			trate = vrate + arate
-		else
-			trate = vrate + arate
-		end
-		if 	not srate then srate = 0
-		end 
-		if 	srate == 0 then 
-			srate = mp.get_property("stream-pos")
-			trate = srate /1024 * 8
-		else
-			trate = (trate + (mp.get_property("stream-pos") - srate) /1024 * 8)/2
-			srate = mp.get_property("stream-pos")
-		end
-		trate = string.format("%4dk ", trate)
-		--現在fps取得
-		if not fps then fps = "0.0"
-		end
-		currentfps = mp.get_property("estimated-vf-fps")
-		if not currentfps then currentfps = 0
-		end
-		tfps = string.format("%4.1f", currentfps).."/"..fps
-		--ボリューム取得
-		local vol = mp.get_property("volume")
-		if errorproof("videoonly") == 1 then vol = 0
-		end
-		if not vol then vol = 0
-		end
-		tvol =  string.format(" vol:%d", vol)
-		if
-			mp.get_property_bool("mute") then tvol = " vol:-" 
-		end
-		--解像度取得
-		currentwidth , currentheight = mp.get_property("osd-width"), mp.get_property("osd-height")
-		if not currentwidth then currentwidth, currentheight = 0,0
-		end
-		currentsize = string.format("%d",currentwidth).."x"..string.format("%d",currentheight)
-		if 	currentsize == orgsize then tsize = currentsize
-		else	tsize = orgsize..">"..currentsize.." "
-		end
-		--まとめてタイトルバーに表示
-		tbarlist = ttype .. tmediatitle .." ("..tsize.." " ..trate.."".. tfps ..") ".. tcache .. " ".. ttime .. tvol
-		autospeed("",cache)
-		print("timerend")
---		mp.add_timeout(0.5, on)
---	else 
---		if errorproof("path") == 1 then reconnectlua() 
---		end
---		print("buffer?")
---	end
+	tmediatitle = mp.get_property("media-title")
+	ttime = mp.get_property_osd("playback-time")
+	--キャッシュ取得
+--	cache = mp.get_property_number("cache-used", 0)
+	mp.add_timeout(0.01 , getcache)
+	if not cache then cache = 0
+	end
+		print("timerstart")
+	tcache = string.format("c:%03dKB" , cache)
+	--ビットレート取得
+	if
+		vrate ~= mp.get_property("packet-video-bitrate")
+	then
+		vrate = mp.get_property("packet-video-bitrate")
+		arate = mp.get_property("packet-audio-bitrate")
+		brate = vrate + arate
+	else
+		brate = vrate + arate
+	end
+	if 	not srate then srate = 0
+	end 
+	if 	srate == 0 then 
+		srate = mp.get_property("stream-pos")
+		brate = srate /1024 * 8
+	else
+		brate = (brate + (mp.get_property("stream-pos") - srate) /1024 * 8)/2
+		srate = mp.get_property("stream-pos")
+	end
+	trate = string.format("%4dk ", brate)
+	--現在fps取得
+	if not fps then fps = "0.0"
+	end
+	currentfps = mp.get_property("estimated-vf-fps")
+	if not currentfps then currentfps = 0
+	end
+	tfps = string.format("%4.1f", currentfps).."/"..fps
+	--ボリューム取得
+	local vol = mp.get_property("volume")
+	if errorproof("videoonly") == 1 then vol = 0
+	end
+	if not vol then vol = 0
+	end
+	tvol =  string.format(" vol:%d", vol)
+	if
+		mp.get_property_bool("mute") then tvol = " vol:-" 
+	end
+	--解像度取得
+	currentwidth , currentheight = mp.get_property("osd-width"), mp.get_property("osd-height")
+	if not currentwidth then currentwidth, currentheight = 0,0
+	end
+	currentsize = string.format("%d",currentwidth).."x"..string.format("%d",currentheight)
+	if 	currentsize == orgsize then tsize = currentsize
+	else	tsize = orgsize..">"..currentsize.." "
+	end
+	--まとめてタイトルバーに表示
+	tbarlist = ttype .. tmediatitle .." ("..tsize.." " ..trate.."".. tfps ..") ".. tcache .. " ".. ttime .. tvol
+	autospeed("",cache)
+	print("timerend")
+--	mp.add_timeout(0.5, on)
 end
 
 --ファイル情報取得とタイマースタート
 function initialize()
-	if errorproof("errordata") == 1 then errordata()
+	if errorproof("errordata") == 1 and errorproof("playing") == 1 then errordata()
 	else
 	if errorproof("path") == 1 then
 		print("initialize")
@@ -270,7 +267,13 @@ function initialize()
 		else	ttype = "["..ttype.."]"
 		end
 		mp.set_property("loop", "inf")
-		mp.add_periodic_timer(1, timer)
+		if errorproof("firststart") == 1 then
+			mp.add_periodic_timer(1, timer)
+			local streampath,localhost,streamid = getpath()
+			mp.commandv("playlist_clear")
+			for i = 0 , 2 do mp.commandv("loadfile", streampath , "append") end
+			mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+		end
 	else print("notpecapath")
 	end	
 	end
@@ -305,16 +308,22 @@ end
 
 --キャッシュ量を再生スピードで調整
 function autospeed(name, value)
-	if errorproof("playing") == 1 and errorproof("\"cache-used\"") == 1 then
-		if 	value > 200 and value < 300 then
+	if errorproof("playing") == 1 and errorproof("\"cache-used\"") == 1 
+	and brate ~= nil and errorproof("\"demuxer-cache-duration\"") ==1 then
+		local kbytepersecond = brate / 8
+		local max = kbytepersecond * 10
+		local min = kbytepersecond * 0.1
+		local normal1 = kbytepersecond * 1
+		local normal2 = kbytepersecond * 2		
+		if 	value > normal1 and value < normal2 then
 			mp.set_property("speed", 1.00)
-		elseif	value < 10 and mp.get_property_number("demuxer-cache-duration") <= 1.2 then
+		elseif	value < min and mp.get_property_number("demuxer-cache-duration") <= 1.2 then
 			mp.set_property("speed", 0.99)
-		elseif value > 1000 then
+		elseif value > max then
 			mp.set_property("speed", 1.01)
-		elseif mp.get_property_number("speed") <= 0.99 and value > 200 then
+		elseif mp.get_property_number("speed") <= 0.99 and value > normal1 then
 			mp.set_property("speed", 1.00)
-		elseif mp.get_property_number("speed") >= 1.01 and value < 300 then
+		elseif mp.get_property_number("speed") >= 1.01 and value < normal2 then
 			mp.set_property("speed", 1.00)
 		end
 	end
