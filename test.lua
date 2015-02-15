@@ -20,11 +20,12 @@ showcachesize = 1			--キャッシュサイズを表示（未表示は未実装�
 sstype = "jpg"				--「"png"」又は「"jpg"」
 jpgquality = 90				--jpgの時の画質。0-100
 sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
-ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で両端の"と最後の\\は必須
+ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\がないとファイル名に化けます
 
 --その他
 icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
-iontop = 1				--最前面表示
+iontop = 1				--最前面表示（うまく動かない）
+recordfolder = "d:\\a b\\"		--録画フォルダ
 
 
 --キーバインド				--（）内はデフォルト
@@ -159,20 +160,20 @@ end
 mp.observe_property("demuxer-cache-duration", "number", cacheerror)
 
 function timer()
-	reconnectlua()
+--	reconnectlua()
 	if 	errorproof("playing") == 1 and errorproof("firststart") == 0 then
 		if errorproof("errordata") == 0 then
 			mp.set_property("options/title", tbarlist )
+			mp.add_timeout(0.8, getstatus)
 		else	errordata()
 		end
-		mp.add_timeout(0.8, getstatus)
 	else 
 		print("buffer?")
 	end
 end
 
 function getstatus()
-	tmediatitle = mp.get_property("media-title")
+	if ttime ~= mp.get_property_osd("playback-time") then
 	ttime = mp.get_property_osd("playback-time")
 	--キャッシュ取得
 --	cache = mp.get_property_number("cache-used", 0)
@@ -181,24 +182,39 @@ function getstatus()
 	end
 		print("timerstart")
 	tcache = string.format("c:%03dKB" , cache)
+	
 	--ビットレート取得
-	if
-		vrate ~= mp.get_property("packet-video-bitrate")
-	then
-		vrate = mp.get_property("packet-video-bitrate")
-		arate = mp.get_property("packet-audio-bitrate")
+	if vrate == nil then vrate = 0
+	end
+	if	vrate ~= mp.get_property("packet-video-bitrate") then
+		if	errorproof("\"packet-video-bitrate\"") == 1 then
+			vrate = mp.get_property("packet-video-bitrate")
+		else	vrate = 0
+		end
+		if	errorproof("\"packet-audio-bitrate\"") == 1 then
+			arate = mp.get_property("packet-audio-bitrate")
+		else	arate = 0
+		end
+		if	vrate == nil then vrate = 0
+		end
+		if	arate == nil then arate = 0
+		end
 		brate = vrate + arate
 	else
 		brate = vrate + arate
 	end
+	
 	if 	not srate then srate = 0
 	end 
+	if	mp.get_property("stream-pos") == nil then srate = 0
+	else
 	if 	srate == 0 then 
 		srate = mp.get_property("stream-pos")
 		brate = srate /1024 * 8
 	else
 		brate = (brate + (mp.get_property("stream-pos") - srate) /1024 * 8)/2
 		srate = mp.get_property("stream-pos")
+	end
 	end
 	trate = string.format("%4dk ", brate)
 	--現在fps取得
@@ -227,10 +243,14 @@ function getstatus()
 	else	tsize = orgsize..">"..currentsize.." "
 	end
 	--まとめてタイトルバーに表示
-	tbarlist = ttype .. tmediatitle .." ("..tsize.." " ..trate.."".. tfps ..") ".. tcache .. " ".. ttime .. tvol
+	if 	count ~= nil and count == 1 then trec = "rec"
+	else	trec = ""
+	end
+	tbarlist = trec..ttype .. tmediatitle .." ("..tsize.." " ..trate.."".. tfps ..") ".. tcache .. " ".. ttime .. tvol
 	autospeed("",cache)
 	print("timerend")
 --	mp.add_timeout(0.5, on)
+	end
 end
 
 --ファイル情報取得とタイマースタート
@@ -239,7 +259,8 @@ function initialize()
 	else
 	if errorproof("path") == 1 then
 		print("initialize")
-		vrate,arate,srate = 0,0,0
+		vrate,arate,srate,brate = 0,0,0,0
+		tmediatitle = mp.get_property("media-title")
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width")
 		if not orgwidth then orgwidth = 0
@@ -291,19 +312,22 @@ function getcache()
 end
 
 --reconnect.luaとりあえずそのまま持ってきた
-local timer = mp.get_time()
-function reconnectlua ()
+local rtimer = mp.get_time()
+--function reconnectlua ()
+mp.add_periodic_timer(1, (function()
+if errorproof("path") == 1 then
 	  if mp.get_property_bool("core-idle") then
-    if mp.get_time() - timer >= 20 then
-      timer = mp.get_time()
+    if mp.get_time() - rtimer >= 20 then
+      rtimer = mp.get_time()
       mp.osd_message("reconnect",3)
       print("reconnect")
       mp.commandv("playlist_next")
     end
   else
-    timer = mp.get_time()
+    rtimer = mp.get_time()
   end
 end
+end))
 
 
 --キャッシュ量を再生スピードで調整
@@ -311,6 +335,8 @@ function autospeed(name, value)
 	if errorproof("playing") == 1 and errorproof("\"cache-used\"") == 1 
 	and brate ~= nil and errorproof("\"demuxer-cache-duration\"") ==1 then
 		local kbytepersecond = brate / 8
+		if	kbytepersecond == 0 then kbytepersecond = 10
+		end
 		local max = kbytepersecond * 10
 		local min = kbytepersecond * 0.1
 		local normal1 = kbytepersecond * 1
@@ -338,11 +364,44 @@ function test()
 	print(mp.get_property("speed"))
 	print(mp.get_property("demuxer-cache-duration"))
 	print(errorproof("\"cache-used\""))
+	print(gettime("hour"))
 
 end
 mp.add_key_binding("KP9", "test" , test)
 
 --mp.add_timeout(0.5 , test)
+
+function gettime(type)
+	local time = os.date("*t")
+	
+	if 	type == "y" then time = time["year"]
+	elseif	type == "m" then time = time["month"]
+	elseif	type == "d" then time = time["day"]
+	elseif	type == "h" then time = time["hour"]
+	elseif	type == "m" then time = time["min"]
+	elseif	type == "s" then time = time["sec"]
+	end
+	return time
+end
+
+function record()
+	if	errorproof("path") == 1 and errorproof("playing") == 1 then
+		if	count == nil or count == 0 then
+			path,b,c = getpath()
+			local date = gettime("y")..gettime("m")..gettime("d").."_"..gettime("h")..gettime("m")..gettime("s")
+			mp.commandv("stop")
+			mp.commandv("loadfile", path)
+			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
+			mp.osd_message("capture_start",3)
+			count = 1
+		else	mp.set_property("stream-capture" , "" )
+			mp.osd_message("capture_end",3)
+			count = 0
+		end
+	end
+end
+mp.add_key_binding("r","record" , record)
+	
 
 --画面サイズ変更用
 function changewindowsize(newwidth , newheight , kurobuti)
@@ -425,8 +484,8 @@ mp.add_key_binding(kvoldown3, "sreducevolume_wheel", sreducevolume)
 function mute()
 	mp.commandv("cycle", "mute")
 	if mp.get_property("mute") == "yes" then
-		mp.osd_message("mute",3)
-	else	mp.osd_message("mute_off",3)
+		mp.osd_message("mute")
+	else	mp.osd_message("mute_off")
 	end
 end
 mp.add_key_binding( kmute, "mute", mute)
