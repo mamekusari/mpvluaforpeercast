@@ -1,6 +1,6 @@
-require( "reconnect" )
-require 'mp.msg'
-mp.msg.log("debug")
+--require( "reconnect" )
+--require 'mp.msg'
+--mp.msg.log("debug")
 --ショートカットをpeerstplayerに似せたlua
 
 --初期設定
@@ -17,8 +17,10 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\がないとファイル名に化けます
 
 --その他
+statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
-iontop = 1				--最前面表示（うまく動かない）
+iontop = 0				--最前面表示（うまく動かない?）
+iosc = 0				--オンスクリーンコントローラーのオンオフ
 recordfolder = "d:\\a b\\"		--録画フォルダ
 
 
@@ -45,12 +47,13 @@ kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
 --kminmute = "未実装"
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
+kosc = "Del"				--oscオンオフ（delete）
 
 --リレー操作
 kstop = "Alt+x"				--リレー切断（alt押しながらx）
 kbump = "Alt+b"				--リレー再接続（alt押しながらb）
 
---スクリーンショット
+--スクリーンショットとか
 kscreenshot = "p"			--スクリーンショットキー（p）
 krecord = "r"				--録画開始と終了（r）
 
@@ -83,11 +86,8 @@ tbarlist = mp.get_property("options/title")
 if icursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
 elseif icorsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
 end
-	if statusbar == 1 then
-		if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
-		end
-	elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
-	end
+mp.set_property("options/network-timeout", 1)
+print(mp.get_property("options/network-timeout"))
 print(mp.get_property("options/cursor-autohide"))
 print(mp.get_property("options/border"))
 print(mp.get_property("options/ontop"))
@@ -108,8 +108,8 @@ function errorproof(case)
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
-			or mp.get_property("playback-time") 
-			or mp.get_property_number("demuxer-cache-duration")
+			and mp.get_property("playback-time") 
+			and mp.get_property_number("demuxer-cache-duration")
 		then
 		hantei = 1
 		else hantei = 0
@@ -175,6 +175,32 @@ function initialize()
 		if not orgheight then orgheight = 0
 		end
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
+		--はじめの設定を適用する
+		if	errorproof("firststart") == 1 then
+			if 	iosc == 1 then mp.commandv("script-message", "enable-osc")
+			else	mp.commandv("script_message", "disable-osc")
+			end
+--			if	 statusbar == 1 then
+--				if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
+--				end
+--			elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
+--			end
+			if	statusbar == 1 and mp.get_property("border") == "no" then
+				mp.commandv("cycle", "border")
+			elseif	statusbar == 0 and mp.get_property("border") == "yes" then
+				mp.commandv("cycle", "border")
+			end
+--			if	iontop == 1 then
+--				if	mp.get_property("options/ontop") == "no" then mp.set_property("options/ontop", "yes")
+--				end
+--			elseif	mp.get_property("options/ontop") == "yes" then mp.set_property("options/ontop", "no")
+--			end
+			if	iontop == 1 and mp.get_property("ontop") == "no" then
+				mp.commandv("cycle", "ontop")
+			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
+				mp.commandv("cycle", "ontop")
+			end
+		end
 		mp.set_property("loop", "inf")
 	else print("notpecapath")
 	end	
@@ -243,12 +269,20 @@ function getpath()
     return fullpath,a[2],id[3]
 end
 
+function osc()
+	if 	mp.get_property("osc") then
+		mp.commandv("script_message", "disable-osc")
+	else	mp.commandv("script_message", "enable-osc")
+	end
+end
+mp.add_key_binding(kosc, "osc", osc)
+
 --スクリーンショット
 function screenshot()
 	if errorproof("playing") == 1 then
 		mp.set_property("options/screenshot-format", sstype )
 		mp.set_property("options/screenshot-jpeg-quality", jpgquality )
-		mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tX_%n")
+		mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
 		if sssize == 0 then sssize = "window" 
 		else sssize = "video"
 		end
@@ -486,3 +520,5 @@ function to1920x1440()
 	changewindowsize(targetsize[1] , targetsize[2] , -1)
 end
 mp.add_key_binding( k1920x1440, "1920x1440", to1920x1440)
+
+

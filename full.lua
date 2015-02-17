@@ -24,7 +24,8 @@ ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\が
 
 --その他
 icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
-iontop = 1				--最前面表示（うまく動かない）
+iontop = 0				--最前面表示（うまく動かない?）
+iosc = 0				--オンスクリーンコントローラーのオンオフ
 recordfolder = "d:\\a b\\"		--録画フォルダ
 
 
@@ -51,12 +52,13 @@ kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
 --kminmute = "未実装"
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
+kosc = "Del"				--oscオンオフ（delete）
 
 --リレー操作
 kstop = "Alt+x"				--リレー切断（alt押しながらx）
 kbump = "Alt+b"				--リレー再接続（alt押しながらb）
 
---スクリーンショット
+--スクリーンショットとか
 kscreenshot = "p"			--スクリーンショットキー（p）
 krecord = "r"				--録画開始と終了（r）
 
@@ -89,11 +91,8 @@ tbarlist = mp.get_property("options/title")
 if icursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
 elseif icorsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
 end
-	if statusbar == 1 then
-		if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
-		end
-	elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
-	end
+mp.set_property("options/network-timeout", 1)
+print(mp.get_property("options/network-timeout"))
 print(mp.get_property("options/cursor-autohide"))
 print(mp.get_property("options/border"))
 print(mp.get_property("options/ontop"))
@@ -114,8 +113,8 @@ function errorproof(case)
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
-			or mp.get_property("playback-time") 
-			or mp.get_property_number("demuxer-cache-duration")
+			and mp.get_property("playback-time") 
+			and mp.get_property_number("demuxer-cache-duration")
 		then
 		hantei = 1
 		else hantei = 0

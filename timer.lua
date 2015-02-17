@@ -1,7 +1,6 @@
 --タイトルバー用タイマーのlua
 
 --ステータス表示
-statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 showcontainertype = 1			--ビデオコーデックかコンテナ表示（未表示は未実装）
 showwindowsize = 1			--表示動画サイズを表示（未表示は未実装）
 showsoucesize = 1			--動画の元のサイズを表示（未表示は未実装）
@@ -25,8 +24,8 @@ function errorproof(case)
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
-			or mp.get_property("playback-time") 
-			or mp.get_property_number("demuxer-cache-duration")
+			and mp.get_property("playback-time") 
+			and mp.get_property_number("demuxer-cache-duration")
 		then
 		hantei = 1
 		else hantei = 0
@@ -126,17 +125,17 @@ function getbitrate()
 	if 	not srate then srate = 0
 	end 
 	
-	mp.add_timeout(0.1,getstreampos)
-	if	streampos == nil then srate = 0
-	else
-		if 	srate == 0 then 
-			srate = streampos
-			brate = srate /1024 * 8
-		else
-			brate = (brate + (streampos - srate) /1024 * 8)/2
-			srate = streampos
-		end
-	end
+--	mp.add_timeout(0.1,getstreampos)
+--	if	streampos == nil then srate = 0
+--	else
+--		if 	srate == 0 then 
+--			srate = streampos
+--			brate = srate /1024 * 8
+--		else
+--			brate = (brate + (streampos - srate) /1024 * 8)/2
+--			srate = streampos
+--		end
+--	end
 --print(streampos)
 	if brate == nil then brate = 0
 	end
@@ -270,14 +269,14 @@ mp.register_event("file-loaded", inittimer)
 --キャッシュ量を再生スピードで調整
 function autospeed(name, value)
 	if errorproof("playing") == 1 and errorproof("\"cache-used\"") == 1 
-	and brate ~= nil and value ~= nil and errorproof("\"demuxer-cache-duration\"") ==1 then
+	and brate ~= nil and value ~= nil then
 		local demuxbuffer = mp.get_property_number("demuxer-cache-duration")
 		if demuxbuffer == nil then demuxbuffer = 0
 		end
 		local kbytepersecond = brate / 8
 		if	kbytepersecond == 0 then kbytepersecond = 10
 		end
-		local max = kbytepersecond * 10
+		local max = kbytepersecond * 15
 		local min = kbytepersecond * 0.1
 		local normal1 = kbytepersecond * 1
 		local normal2 = kbytepersecond * 2		
@@ -372,3 +371,10 @@ mp.add_periodic_timer(1, (function()
 	end
 end))
 
+
+mp.add_periodic_timer(1, (function()
+	if not count then count = 0
+	end
+	count = count + 1
+	print(count)
+end))
