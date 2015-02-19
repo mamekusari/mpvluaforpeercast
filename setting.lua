@@ -1,11 +1,8 @@
---require( "reconnect" )
---require 'mp.msg'
---mp.msg.log("debug")
 --ショートカットをpeerstplayerに似せたlua
 
 --初期設定
 --ボリューム関係
-initialvolume = 11			--初期ボリューム
+ivolume = 11				--初期ボリューム
 volume = 5				--マウスホイールの変更量
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
@@ -17,11 +14,11 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\がないとファイル名に化けます
 
 --その他
-statusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+istatusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
 iontop = 0				--最前面表示（うまく動かない?）
 iosc = 0				--オンスクリーンコントローラーのオンオフ
-recordfolder = "d:\\a b\\"		--録画フォルダ
+recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
 
 --キーバインド				--（）内はデフォルト
@@ -80,17 +77,22 @@ k25 = "8"
 
 
 
+
+--ここからスクリプトの処理コード
 orgwidth , orgheight = 0,0
-mp.set_property("options/volume", initialvolume )
+mp.set_property("options/volume", ivolume )
 tbarlist = mp.get_property("options/title")
 if icursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
 elseif icorsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
 end
-mp.set_property("options/network-timeout", 1)
-print(mp.get_property("options/network-timeout"))
-print(mp.get_property("options/cursor-autohide"))
-print(mp.get_property("options/border"))
-print(mp.get_property("options/ontop"))
+mp.set_property("options/screenshot-format", sstype )
+mp.set_property("options/screenshot-jpeg-quality", jpgquality )
+mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
+if sssize == 0 then sssize = "window" 
+else sssize = "video"
+end
+mp.set_property("options/network-timeout", 5)
+mp.enable_messages("info")
 
 
 function errorproof(case)
@@ -130,38 +132,6 @@ function errorproof(case)
 	return	hantei 
 end
 
-function errordata()
---		mp.commandv("playlist-next", "force")
---	bump()
-	refresh()
-		print("errordata")
-end
-
-function datacheck(bool)
-	if	bool and errorproof("errordata") == 1 then
-		print(bool)
-		refresh()
-	end
-end
-mp.observe_property("core-idle", "bool", datacheck)
-
-function avsync(value)
---	if	value > 1 then
---		mp.commandv("drop_buffers")
---	end
-print(value)
-end
---mp.observe_property("avsync", "number", avsync)
-
-function cacheerror(value)
-local a = mp.get_property_number("demuxer-cache-duration")
-	if a ~= nil and a > 3 then
---		mp.commandv("drop_buffers")
-		mp.commandv("playlist_next", "force")
-	end
-end
---mp.observe_property("demuxer-cache-duration", "number", cacheerror)
-
 --ファイル情報取得
 function initialize()
 	if errorproof("errordata") == 1 and errorproof("playing") == 1 then errordata()
@@ -180,14 +150,14 @@ function initialize()
 			if 	iosc == 1 then mp.commandv("script-message", "enable-osc")
 			else	mp.commandv("script_message", "disable-osc")
 			end
---			if	 statusbar == 1 then
+--			if	 istatusbar == 1 then
 --				if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
 --				end
 --			elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
 --			end
-			if	statusbar == 1 and mp.get_property("border") == "no" then
+			if	istatusbar == 1 and mp.get_property("border") == "no" then
 				mp.commandv("cycle", "border")
-			elseif	statusbar == 0 and mp.get_property("border") == "yes" then
+			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
 				mp.commandv("cycle", "border")
 			end
 --			if	iontop == 1 then
@@ -253,8 +223,7 @@ mp.add_key_binding(krecord,"record" , record)
 function changewindowsize(newwidth , newheight , kurobuti)
 	mp.set_property("vf","dsize=" .. math.floor(newwidth) ..":".. math.floor(newheight) ..":".. kurobuti .."::0")
 	mp.set_property_number("window-scale" , 1)
-	currentwidth = mp.get_property("dwidth")
-	currentheight = mp.get_property("dheight")
+
 	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
 end
 
@@ -269,8 +238,10 @@ function getpath()
     return fullpath,a[2],id[3]
 end
 
+--osc切り替え
 function osc()
 	if 	mp.get_property("osc") then
+		mp.commandv("script_message", "disable-osc")
 		mp.commandv("script_message", "disable-osc")
 	else	mp.commandv("script_message", "enable-osc")
 	end
@@ -280,12 +251,6 @@ mp.add_key_binding(kosc, "osc", osc)
 --スクリーンショット
 function screenshot()
 	if errorproof("playing") == 1 then
-		mp.set_property("options/screenshot-format", sstype )
-		mp.set_property("options/screenshot-jpeg-quality", jpgquality )
-		mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
-		if sssize == 0 then sssize = "window" 
-		else sssize = "video"
-		end
 		mp.commandv("screenshot" , sssize )
 		mp.osd_message("screenshot")
 	end
@@ -350,6 +315,7 @@ function panleft()
 	mp.set_property("af", "pan=2:[ 1 , 0 ]")
 	else mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
+	mp.osd_message("pan_left")
 end
 mp.add_key_binding(kpanleft, "panleft", panleft)
 
@@ -359,18 +325,21 @@ function panright()
 	mp.set_property("af", "pan=2:[ 1 , 1 ]") 
 	end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
+	mp.osd_message("pan_right")
 end
 mp.add_key_binding(kpanright, "panright", panright)
 
 --音声を中央（モノラル）に
 function pancenter()
 	mp.set_property("af", "pan=1:[ 1 , 1 ]")
+	mp.osd_message("mono")
 end
 mp.add_key_binding(kpancenter, "pancenter", pancenter)
 
 --音声を普通のステレオに
 function panrestore()
 	mp.set_property("af", "channels=2")
+	mp.osd_message("stereo")
 end
 mp.add_key_binding(kpanstereo, "panrestore", panrestore)
 
