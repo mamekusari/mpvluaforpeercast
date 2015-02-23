@@ -1,8 +1,9 @@
---ショートカットをpeerstplayerに似せたlua
+--キーバインドは「T」だとshift+tで「t」で単体のtになります
+
 
 --初期設定
 --ボリューム関係
-ivolume = 11				--初期ボリューム
+ivolume = 11				--初期ボリューム。0-100
 volume = 5				--マウスホイールの変更量
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
@@ -14,10 +15,10 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\がないとファイル名に化けます
 
 --その他
-istatusbar = 0				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
-icursorhide = 1				--マウスカーソルを自動的に隠す。2はフルスクリーンのみ隠す
+istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
+icursorhide = 2				--マウスカーソルを自動的に隠す。「2」はフルスクリーンのみ隠す
 iontop = 0				--最前面表示（うまく動かない?）
-iosc = 0				--オンスクリーンコントローラーのオンオフ
+iosc = 1				--オンスクリーンコントローラーのオンオフ
 recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
 
@@ -82,9 +83,14 @@ k25 = "8"
 orgwidth , orgheight = 0,0
 mp.set_property("options/volume", ivolume )
 tbarlist = mp.get_property("options/title")
-if icursorhide == 1 then mp.set_property("options/cursor-autohide" , "3000" )
-elseif icorsorhide == 2 then mp.set_property("options/cursor-autohide-fs-only" , 3000 )
+mp.set_property("options/cursor-autohide" , "3000" )
+mp.set_property("options/cursor-autohide-fs-only", "no" )
+if icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
+elseif icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
 end
+--mp.set_property("options/ontop", "yes")
+--if iontop == 0 then mp.commandv("cycle", "ontop")--mp.set_property("options/ontop" , "no")
+--end
 mp.set_property("options/screenshot-format", sstype )
 mp.set_property("options/screenshot-jpeg-quality", jpgquality )
 mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
@@ -92,21 +98,24 @@ if sssize == 0 then sssize = "window"
 else sssize = "video"
 end
 mp.set_property("options/network-timeout", 5)
-mp.enable_messages("info")
-
+--mp.enable_messages("info")
+print(mp.get_property("options/network-timeout"))
+print(mp.get_property("options/cursor-autohide"))
+print(mp.get_property("options/cursor-autohide-fs-only"))
+print(mp.get_property("options/border"))
+print(mp.get_property("options/ontop"))
+--print(mp.get_property("osd-width"))
 
 function errorproof(case)
-	local hantei = nil
+	local hantei
 --	print(case)
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
 		hantei = 1
-		else hantei = 0
 		end
 	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
 		hantei = 1
-		else hantei = 0
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
@@ -114,17 +123,14 @@ function errorproof(case)
 			and mp.get_property_number("demuxer-cache-duration")
 		then
 		hantei = 1
-		else hantei = 0
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
 			hantei = 1
-			else hantei = 0
 		end
 	elseif case == "errordata" then
 		if	mp.get_property("track-list/2/codec") then
 			hantei = 1
-			else hantei = 0
 		end
 	elseif	not mp.get_property(case) then
 		hantei = 1
@@ -134,9 +140,9 @@ end
 
 --ファイル情報取得
 function initialize()
-	if errorproof("errordata") == 1 and errorproof("playing") == 1 then errordata()
+	if errorproof("errordata") and errorproof("playing") then errordata()
 	else
-	if errorproof("path") == 1 then
+	if errorproof("path") then
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width")
 		if not orgwidth then orgwidth = 0
@@ -146,7 +152,10 @@ function initialize()
 		end
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
 		--はじめの設定を適用する
-		if	errorproof("firststart") == 1 then
+		if	errorproof("firststart") then
+		print("1")
+--			while	mp.get_property_number("osd-width") < 1 do -- os.execute("timeout /t 3")
+--			end
 			if 	iosc == 1 then mp.commandv("script-message", "enable-osc")
 			else	mp.commandv("script_message", "disable-osc")
 			end
@@ -170,6 +179,7 @@ function initialize()
 			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
 				mp.commandv("cycle", "ontop")
 			end
+		print("2")
 		end
 		mp.set_property("loop", "inf")
 	else print("notpecapath")
@@ -192,7 +202,7 @@ function gettime(type)
 end
 
 function refresh()
-	if	errorproof("path") == 1 then
+	if	errorproof("path") then
 		local streampath,localhost,streamid = getpath()
 		mp.commandv("stop")
 		mp.commandv("loadfile", streampath)
@@ -202,17 +212,19 @@ function refresh()
 end
 
 function record()
-	if	errorproof("path") == 1 and errorproof("playing") == 1 then
-		if	recording == nil or recording == 0 then
-			local date = gettime("y")..gettime("m")..gettime("d").."_"..gettime("h")..gettime("m")..gettime("s")
+	if	errorproof("path") and errorproof("playing") then
+		if	mp.get_property("stream-capture") == "" then
+--		if	recording == nil or recording == 0 then
+--			local date = gettime("y")..gettime("m")..gettime("d").."_"..gettime("h")..gettime("m")..gettime("s")
+			local date = os.date("%y%m%d_%H%M%S")
 			refresh()
 			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
 			mp.osd_message("record_start",3)
-			recording = 1
+--			recording = 1
 			print(mp.get_property("playlist-count"))
 		else	mp.set_property("stream-capture" , "" )
 			mp.osd_message("record_end",3)
-			recording = 0
+--			recording = 0
 		end
 	end
 end
@@ -241,16 +253,19 @@ end
 --osc切り替え
 function osc()
 	if 	mp.get_property("osc") then
+		while mp.get_property("osc") do --mp.commandv("script_message", "disable-osc")
 		mp.commandv("script_message", "disable-osc")
-		mp.commandv("script_message", "disable-osc")
+		end
+			print("run")
 	else	mp.commandv("script_message", "enable-osc")
 	end
+
 end
 mp.add_key_binding(kosc, "osc", osc)
 
 --スクリーンショット
 function screenshot()
-	if errorproof("playing") == 1 then
+	if errorproof("playing") then
 		mp.commandv("screenshot" , sssize )
 		mp.osd_message("screenshot")
 	end
@@ -373,7 +388,7 @@ mp.add_key_binding(kontop, "ontop", ontop)
 
 --リレー再接続
 function bump()
-	if errorproof("path") == 1 then
+	if errorproof("path") then
 	local streampath,localhost,streamid = getpath()
 	mp.commandv("playlist_clear")
 	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
@@ -386,7 +401,7 @@ mp.add_key_binding(kbump, "bump" , bump)
 
 --リレー切断
 function stop()
-	if errorproof("path") == 1 then
+	if errorproof("path") then
 	local streampath,localhost,streamid = getpath()
 	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
 	end
