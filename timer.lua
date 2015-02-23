@@ -1,12 +1,12 @@
---タイトルバー用タイマーのlua
+--タイトルバー用タイマーのlua。0で非表示になります
 
 --ステータス表示
 showtype = 1				--ビデオコーデック「1」かコンテナ表示「2」
 showsize = 3				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
 showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
 showbitrate = 1				--キーフレーム間のビットレート表示
-showcache = 2				--キャッシュサイズを表示
-enableautospeed = 1			--キャッシュ量の自動調整「2」でたまったときだけ調整
+showcache = 2				--キャッシュサイズを表示。「2」でdemuxされた分も表示
+enableautospeed = 1			--キャッシュ量の自動調整。「2」でたまったときだけ調整
 
 
 
@@ -105,17 +105,19 @@ end
 
 --キャッシュ取得
 function getcache()
-	local cache
+	local cache,demuxed
 	if 	mp.get_property("paused-for-cache") == "no" and mp.get_property("cache-used") ~= nil then
 		cache = mp.get_property_number("cache-used", 0)
+		demuxed = mp.get_property_number("demuxer-cache-duration")
 	else
 		print("getcachefail")
 		cache = 0
+		demuxed = 0
 	end
 	
-	if cache == nil then cache = 0
+	if cache == nil then cache,demuxed = 0,0
 	end
-	return cache
+	return cache,demuxed
 end
 
 --ビットレート取得
@@ -155,7 +157,7 @@ function getbitrate()
 --			srate = streampos
 --			brate = srate /1024 * 8
 --		else
-			--mkv以外きちんと1秒平均とれないようだから2秒で割ってみた
+			--mkv以外きちんと1秒平均とれないようだから2で割ってみた
 --			brate = (brate + (streampos - srate) /1024 * 8)/2
 --			srate = streampos
 --		end
@@ -208,7 +210,7 @@ end
 
 function getstatus()
 --	if ttime ~= mp.get_property_osd("playback-time") then
-	local currentsize,cache,size,rate,tfps
+	local currentsize,cache,demuxed,size,rate,tfps
 	local trec,tinfo,tcache,ttime,tvol
 	
 	trec = mp.get_property("stream-capture")
@@ -262,10 +264,10 @@ function getstatus()
 	end	
 	
 	ttime = mp.get_property_osd("playback-time")
-	cache = getcache()
+	cache,demuxed = getcache()
 	if	showcache == 0 then tcache = ""
 	elseif	showcache == 1 then tcache = string.format("c:%03dKB" , cache)
-	else	tcache = string.format("%3.1fs+%03dKB",mp.get_property("demuxer-cache-duration"),cache)
+	else	tcache = string.format("%3.1fs+%03dKB",demuxed,cache)
 	end
 	if	enableautospeed ~= 0 then autospeed("",cache)
 	end
