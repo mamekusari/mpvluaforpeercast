@@ -1,4 +1,5 @@
 --キーバインドは「T」だとshift+tで「t」で単体のtになります
+--mpvのデフォルトは無効になっていないのでたとえばqを押すとプレイヤーが終了します
 
 
 --初期設定
@@ -98,12 +99,14 @@ if sssize == 0 then sssize = "window"
 else sssize = "video"
 end
 mp.set_property("options/network-timeout", 5)
+mp.set_property("loop", "force")
 --mp.enable_messages("info")
 print(mp.get_property("options/network-timeout"))
 print(mp.get_property("options/cursor-autohide"))
 print(mp.get_property("options/cursor-autohide-fs-only"))
 print(mp.get_property("options/border"))
 print(mp.get_property("options/ontop"))
+print(mp.get_property("loop"))
 --print(mp.get_property("osd-width"))
 
 function errorproof(case)
@@ -111,18 +114,18 @@ function errorproof(case)
 --	print(case)
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
-		hantei = 1
+			hantei = 1
 		end
 	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
-		hantei = 1
+			hantei = 1
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			and mp.get_property("playback-time") 
 			and mp.get_property_number("demuxer-cache-duration")
-		then
-		hantei = 1
+			then
+			hantei = 1
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
@@ -144,12 +147,8 @@ function initialize()
 	else
 	if errorproof("path") then
 		--動画サイズ取得
-		orgwidth  = mp.get_property("width")
-		if not orgwidth then orgwidth = 0
-		end
-		orgheight = mp.get_property("height")
-		if not orgheight then orgheight = 0
-		end
+		orgwidth  = mp.get_property("width", 0)
+		orgheight = mp.get_property("height", 0)
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
 		--はじめの設定を適用する
 		if	errorproof("firststart") then
@@ -221,7 +220,6 @@ function record()
 			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
 			mp.osd_message("record_start",3)
 --			recording = 1
-			print(mp.get_property("playlist-count"))
 		else	mp.set_property("stream-capture" , "" )
 			mp.osd_message("record_end",3)
 --			recording = 0
@@ -505,4 +503,12 @@ function to1920x1440()
 end
 mp.add_key_binding( k1920x1440, "1920x1440", to1920x1440)
 
+function tow20per()
+	local targetsize = "25%"
+--	changewindowsize(targetsize,"",2)
+	mp.set_property("vf","dsize=" .. targetsize ..":".."-2"..":".. 2 .."::0")
+	mp.set_property_number("window-scale" , 1)
 
+	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
+end
+mp.add_key_binding( "KP3" , "tow20per", tow20per)

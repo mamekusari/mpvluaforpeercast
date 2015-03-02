@@ -1,33 +1,34 @@
---タイトルバー用タイマーのlua。0で非表示になります
+--タイトルバー用情報取得タイマーのlua。0で非表示になります
 
 --ステータス表示
 showtype = 1				--ビデオコーデック「1」かコンテナ表示「2」
 showsize = 3				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
-showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
 showbitrate = 1				--キーフレーム間のビットレート表示
+showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
 showcache = 2				--キャッシュサイズを表示。「2」でdemuxされた分も表示
+showplaytime = 0			--再生時間（たまに総配信時間）を表示
 enableautospeed = 1			--キャッシュ量の自動調整。「2」でたまったときだけ調整
 
 
 
-
+--ここからスクリプトの処理コード
 function errorproof(case)
 	local hantei
 --	print(case)
 	if 	case == "path" then
-		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
-		hantei = 1
+		if 	string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
+			hantei = 1
 		end
 	elseif	case == "firststart" then
-		if mp.get_property_number("playlist-count")  < 3 then
-		hantei = 1
+		if 	mp.get_property_number("playlist-count")  < 3 then
+			hantei = 1
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			and mp.get_property("playback-time") 
 			and mp.get_property_number("demuxer-cache-duration")
-		then
-		hantei = 1
+			then
+			hantei = 1
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
@@ -50,27 +51,28 @@ function errordata()
 		print("errordata")
 end
 
-function datacheck(bool)
-	if	bool and errorproof("errordata") then
+function datacheck()--(name,bool)
+	if	errorproof("errordata") then
 		print(bool)
 		refresh()
 		print("datacheckrun:refresh")
 	end
 	print("datacheckrun")
 end
-mp.observe_property("core-idle", "bool", datacheck)
+mp.register_event("start-file", datacheck)
+--mp.observe_property("core-idle", "bool", datacheck)
 
 function avsync(value)
-	local avsync = mp.get_property_number("avsync")
-	local ct = mp.get_property_number("total-avsync-change")
-	if	ct == nil then ct,avsync = 0,0
-	end
-	if	ct == nil or ct > 2 or ct < -2 then
+	local avsync = math.abs(mp.get_property_number("avsync", 0))
+	local ct = math.abs(mp.get_property_number("total-avsync-change", 0))
+--	if	ct == nil then ct,avsync = 0,0
+--	end
+	if	ct > 2 then
 		mp.commandv("drop_buffers") 
 --		mp.commandv("playlist-next")
 		print("outofct: "..ct)	
 	
-	elseif	avsync == nil or avsync > 2 or avsync < -2 then
+	elseif	avsync > 2 then
 		mp.commandv("drop_buffers")
 --		mp.commandv("playlist-next")
 		print("outofsync: "..avsync)
@@ -82,8 +84,8 @@ end
 mp.observe_property("avsync", "number", avsync)
 
 function cacheerror(value)
-local a = mp.get_property_number("demuxer-cache-duration")
-	if a ~= nil and a > 3 then
+local a = mp.get_property_number("demuxer-cache-duration", 0)
+	if a > 3 then
 --		mp.commandv("drop_buffers")
 		mp.commandv("playlist_next", "force")
 	end
@@ -93,30 +95,35 @@ end
 
 function getstreampos()
 	if	not errorproof("errordata") then
-		streampos = mp.get_property("stream-pos")
+		if	mp.get_property_number("demuxer-cache-duration", 0) >= 0.5 then
+			print("1")
+			streampos = mp.get_property("stream-pos", 0)
+			print(streampos)
+		end
 		if streampos == nil then
 			print("get_streampos_fail")
-			refresh()
+			--refresh()
 		end
 	else	mp.set_property("stream-pos" , 0 )
 		refresh()
 	end
+	
 end
-
+mp.add_key_binding("-", "test3",getstreampos)
 --キャッシュ取得
 function getcache()
 	local cache,demuxed
-	if 	mp.get_property("paused-for-cache") == "no" and mp.get_property("cache-used") ~= nil then
+	if 	mp.get_property("paused-for-cache") == "no" then--and mp.get_property("cache-used") ~= nil then
 		cache = mp.get_property_number("cache-used", 0)
-		demuxed = mp.get_property_number("demuxer-cache-duration")
+		demuxed = mp.get_property_number("demuxer-cache-duration", 0)
 	else
 		print("getcachefail")
 		cache = 0
 		demuxed = 0
 	end
 	
-	if cache == nil then cache,demuxed = 0,0
-	end
+--	if cache == nil or demuxed == nil then cache,demuxed = 0,0
+--	end
 	return cache,demuxed
 end
 
@@ -124,24 +131,24 @@ end
 function getbitrate()
 --	local vrate,arate,brate,srate
 	--キーフレーム間のビットレートを計測する方法
-	local pvrate = mp.get_property("packet-video-bitrate")
-	local parate = mp.get_property("packet-audio-bitrate")
+	local pvrate = mp.get_property("packet-video-bitrate", 0)
+	local parate = mp.get_property("packet-audio-bitrate", 0)
 	if vrate == nil then vrate = 0
 	end
 	
 	if	vrate ~= pvrate then
-		if	pvrate ~= nil then
+--		if	pvrate ~= nil then
 			vrate = pvrate
-		else	vrate = 0
-		end
-		if	parate ~= nil then
+--		else	vrate = 0
+--		end
+--		if	parate ~= nil then
 			arate = parate
-		else	arate = 0
-		end
-		if	vrate == nil then vrate = 0
-		end
-		if	arate == nil then arate = 0
-		end
+--		else	arate = 0
+--		end
+--		if	vrate == nil then vrate = 0
+--		end
+--		if	arate == nil then arate = 0
+--		end
 		brate = vrate + arate
 	else
 		brate = vrate + arate
@@ -150,34 +157,35 @@ function getbitrate()
 --	if 	not srate then srate = 0
 --	end 
 	--ストリームのデータ量からビットレートを計算する方法
---	mp.add_timeout(0.1,getstreampos)
+	--こっちの方法にするとmp.get_proprety("stream-pos")のところで他のスクリプトも巻き込んで反応がなくなることがあります。誰か回避策おしえてください
+--	getstreampos()
 --	if	streampos == nil then srate = 0
 --	else
 --		if 	srate == 0 then 
 --			srate = streampos
 --			brate = srate /1024 * 8
 --		else
-			--mkv以外きちんと1秒平均とれないようだから2で割ってみた
+--			--mkv以外きちんと1秒平均とれないようだから2で割ってみた
 --			brate = (brate + (streampos - srate) /1024 * 8)/2
 --			srate = streampos
 --		end
 --	end
 --print(streampos)
-	if brate == nil then brate = 0
-	end
+--	if brate == nil then brate = 0
+--	end
 	
 	return brate
 end
 
 --現在fps取得
 function getfps()
-	local fps = mp.get_property("estimated-vf-fps")
+	local fps = mp.get_property("estimated-vf-fps", 0)
 --	if not fps then fps = "0.0"
 --	end
 	
 --	fps = mp.get_property("estimated-vf-fps")
-	if not fps then fps = 0
-	end
+--	if not fps then fps = 0
+--	end
 	
 --	if fps == nil then fps = 0
 --	end
@@ -187,23 +195,23 @@ end
 
 --ボリューム取得
 function getvolume()
-	local vol = mp.get_property("volume")
-	if errorproof("videoonly") or vol == nil then vol = 0
-	end
+	local vol = mp.get_property("volume", 0)
+--	if errorproof("videoonly") or vol == nil then vol = 0
+--	end
 	
 	return vol
 end
 
 --解像度取得
 function getresolution(tateyoko)
-	if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height")
+	if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
 		elseif tateyoko == "tateyoko" then 
 			tateyoko = string.format("%d",getresolution("yoko")).."x"..string.format("%d",getresolution("tate"))
-		else	tateyoko = mp.get_property("osd-width")
+		else	tateyoko = mp.get_property("osd-width", 0)
 	end
 --	local currentwidth , currentheight = mp.get_property("osd-width"), mp.get_property("osd-height")
-	if not tateyoko then tateyoko = 0
-	end
+--	if not tateyoko then tateyoko = 0
+--	end
 
 	return tateyoko
 end
@@ -217,7 +225,7 @@ function getstatus()
 	if 	trec ~= "" then trec = "rec"
 	else	trec = ""
 	end
-	if	showsize == 0 then size = ""
+	if	not showsize or showsize > 3 then size = ""
 	else
 		if	showsize == 3 then
 			size = orgsize
@@ -263,7 +271,9 @@ function getstatus()
 		end
 	end	
 	
-	ttime = mp.get_property_osd("playback-time")
+	if	showplaytime ~= 1 then ttime = ""
+	else	ttime = mp.get_property_osd("playback-time", 0)
+	end
 	cache,demuxed = getcache()
 	if	showcache == 0 then tcache = ""
 	elseif	showcache == 1 then tcache = string.format("c:%03dKB" , cache)
@@ -292,43 +302,43 @@ end
 function inittimer()
 	if errorproof("errordata") and errorproof("playing") then errordata()
 	else
-	if errorproof("path") then
-		print("initialize")
-		vrate,arate,srate,brate = 0,0,0,0
-		tmediatitle = mp.get_property("media-title")
-		--動画サイズ取得
-		orgwidth  = mp.get_property("width")
-		if not orgwidth then orgwidth = 0
-		end
-		orgheight = mp.get_property("height")
-		if not orgheight then orgheight = 0
-		end
-		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
-		--fps取得
-		fps = mp.get_property_number("fps")
-		if 	not fps then fps = "0.0"
-			elseif fps == 1000 then fps = "vfr"
-			else fps = string.format("%4.1f", fps)
-		end
-		--ビデオコーデック取得
---		vcodec = mp.get_property("video-codec")
-		if	showtype == 1 then
-			if 	mp.get_property("track-list/0/type") == "video" then
-				ttype = mp.get_property("track-list/0/codec")
-			else	ttype = mp.get_property("track-list/1/codec")
-			end
-		elseif	showtype == 2 then ttype = mp.get_property("file-format")
-		end
-		if	not ttype or showtype == 0 then ttype = ""
-		else	ttype = "["..ttype.."]"
-		end
-		mp.set_property("loop", "inf")
-		if errorproof("firststart") then
---			if  recording ~= 1 then mp.add_periodic_timer(1, timer)
+		if errorproof("path") then
+			print("initialize")
+			vrate,arate,srate,brate = 0,0,0,0
+			tmediatitle = mp.get_property("media-title")
+			--動画サイズ取得
+			orgwidth  = mp.get_property("width", 0)
+--			if not orgwidth then orgwidth = 0
 --			end
-		end
-	else print("notpecapath")
-	end	
+			orgheight = mp.get_property("height", 0)
+--			if not orgheight then orgheight = 0
+--			end
+			orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
+			--fps取得
+			fps = mp.get_property_number("fps", 0)
+			if 	not fps then fps = "0.0"
+			elseif fps == 1000 then fps = "vfr"
+			else fps = string.format("%3.1f", fps)
+			end
+			--ビデオコーデック取得
+--			vcodec = mp.get_property("video-codec")
+			if	showtype == 1 then
+				if 	mp.get_property("track-list/0/type") == "video" then
+					ttype = mp.get_property("track-list/0/codec")
+				else	ttype = mp.get_property("track-list/1/codec")
+				end
+			elseif	showtype == 2 then ttype = mp.get_property("file-format")
+			end
+			if	not ttype or showtype == 0 then ttype = ""
+			else	ttype = "["..ttype.."]"
+			end
+			mp.set_property("loop", "inf")
+			if errorproof("firststart") then
+--				if  recording ~= 1 then mp.add_periodic_timer(1, timer)
+--				end
+			end
+		else print("notpecapath")
+		end	
 	end
 end
 mp.register_event("file-loaded", inittimer)
@@ -337,15 +347,16 @@ mp.register_event("file-loaded", inittimer)
 --キャッシュ量を再生スピードで調整
 function autospeed(name, value)
 	if errorproof("playing") --and  errorproof("\"cache-used\"") == 1 
-	and brate ~= nil and value ~= nil and mp.get_property_number("packet-video-bitrate") > 1 then
-		local demuxbuffer = mp.get_property_number("demuxer-cache-duration")
-		if demuxbuffer == nil then demuxbuffer = 0
-		end
+	and brate ~= nil  and mp.get_property_number("packet-video-bitrate", 0) > 1 then
+		local demuxbuffer = mp.get_property_number("demuxer-cache-duration", 0)
+--		if demuxbuffer == nil then demuxbuffer = 0
+--		end
 		local kbytepersecond = brate / 8
 		if	kbytepersecond == 0 then kbytepersecond = 10
 		end
-		local max = kbytepersecond * 15	--2秒+今のレート換算15秒相当分キャッシュが貯まったら早送り開始
-		local min = kbytepersecond * 0.1	--1.2秒と0.1秒相当分以下のキャッシュになったら遅くする
+		local high = kbytepersecond * 15	--2秒+今のレート換算15秒相当分キャッシュが貯まったら早送り開始
+		local lowdemuxed = 1.2			--demuxされた分が1.2秒以下になって↓のキャッシュ以下になったら遅くする
+		local low = kbytepersecond * 0.1	--↑を満たして0.1秒相当分以下のキャッシュになったら遅くする
 		local normal1 = kbytepersecond * 1	--遅くしてから2秒+1秒相当分たまったら普通の速度に戻す
 		local normal2 = kbytepersecond * 2	--早くしてから2秒+2秒相当分になったら普通の速度に戻す	
 		local lowspeed = 0.99			--遅くしたときの再生速度
@@ -354,15 +365,16 @@ function autospeed(name, value)
 		end
 		if 	value > normal1 and value < normal2 then
 			mp.set_property("speed", 1.00)
-		elseif	value < min and demuxbuffer <= 1.2 then
+		elseif	value < low and demuxbuffer <= lowdemuxed then
 			mp.set_property("speed", lowspeed)
-		elseif value > max then
+		elseif value > high then
 			mp.set_property("speed", highspeed)
 		elseif mp.get_property_number("speed") <= lowspeed and value > normal1 then
 			mp.set_property("speed", 1.00)
 		elseif mp.get_property_number("speed") >= highspeed and value < normal2 then
 			mp.set_property("speed", 1.00)
 		end
+	else	mp.set_property("speed", 1.00)
 	end
 end
 --mp.observe_property("cache-used", "number", autospeed)
@@ -374,19 +386,17 @@ function test()
 --	print(mp.get_property("time-pos"))
 --	print(mp.get_property("fps"))
 --	print(mp.get_property("speed"))
-	print(mp.get_property("demuxer-cache-duration"))
-	print(mp.get_property("packet-video-bitrate"))
+	print(mp.get_property("playback-time"))
+	print(mp.get_property("time-pos"))
 --	print(errorproof("\"cache-used\""))
-	print(mp.get_property("stream-pos"))
+	print(mp.get_property("time-start"))
 	print(mp.get_property("window-minimized"))
 	print(os.getenv("USERPROFILE").."\\my pictures\\")
 --	print(os.execute("intWindowStyle"))
---	os.execute("telnet localhost 7146")
---	os.execute("telnet GET / HTTP/1.1")
---	print(os.execute("telnet Host: localhost"))
-	if not errorproof("videoonly") then print("true")
+	if mp.get_property_number("packet-video-bitrate") then print("true")
 	else	print("false")
 	end
+	print(mp.get_property("fps"))
 
 end
 mp.add_key_binding("KP8", "test" , test)
@@ -428,7 +438,7 @@ function refresh()
 end
 mp.add_key_binding("KP7","refresh",refresh)
 
-
+count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
 --	reconnectlua()
@@ -443,6 +453,13 @@ mp.add_periodic_timer(1, (function()
 		end
 	else 
 		print("buffer?")
+		if	errorproof("firststart") then
+			count = count + 1
+			if	count >= 15 then refresh()
+				count = 0
+			end
+		end
+				
 	end
 end))
 
