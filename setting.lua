@@ -40,10 +40,10 @@ kpanstereo = "Ctrl+Down"		--音声を普通のステレオに（ctrl押しなが
 kmute = "MOUSE_BTN1"			--ミュート（マウス中クリック）
 
 --プレイヤーの状態
---kminimize = "未実装"
+kminimize = "+"				--最小化のようなもの（+）
 kfullscreen = "Alt+Enter"		--フルスクリーン（alt押しながらenter）
 kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
---kminmute = "未実装"
+kminmute = "MOUSE_BTN0_DBL"		--最小化のようなものと同時にミュート（左ダブルクリック）
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
 kosc = "Del"				--oscオンオフ（delete）
@@ -273,20 +273,20 @@ mp.add_key_binding(kscreenshot, "screenshot", screenshot)
 --ボリューム上げる
 function gainvolume()
 	mp.commandv("add", "volume", volume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding(kvolup, "gainvolume", gainvolume)
 mp.add_key_binding(kvolup_wheel, "gainvolume_wheel", gainvolume)
 
 function cgainvolume()
 	mp.commandv("add", "volume", ctrlvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding(kvolup2, "cgainvolume_wheel", cgainvolume)
 
 function sgainvolume()
 	mp.commandv("add", "volume", shiftvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding("Shift+Up", "sgainvolume", sgainvolume)
 mp.add_key_binding(kvolup3, "sgainvolume_wheel", sgainvolume)
@@ -294,20 +294,20 @@ mp.add_key_binding(kvolup3, "sgainvolume_wheel", sgainvolume)
 --ボリューム下げる
 function reducevolume()
 	mp.commandv("add", "volume", -1 * volume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding(kvoldown, "reducevolume", reducevolume)
 mp.add_key_binding(kvoldown_wheel, "reducevolume_wheel", reducevolume)
 
 function creducevolume()
 	mp.commandv("add", "volume", -1 * ctrlvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding(kvoldown2, "creducevolume_wheel", creducevolume)
 
 function sreducevolume()
 	mp.commandv("add", "volume", -1 * shiftvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume",1)))
+	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
 end
 mp.add_key_binding("Shift+Down", "sreducevolume", sreducevolume)
 mp.add_key_binding(kvoldown3, "sreducevolume_wheel", sreducevolume)
@@ -324,7 +324,7 @@ mp.add_key_binding( kmute, "mute", mute)
 
 --音声を左のみに
 function panleft()
-	if mp.get_property_number("audio-channels") == 1 then
+	if mp.get_property_number("audio-channels",0) == 1 then
 	mp.set_property("af", "pan=2:[ 1 , 0 ]")
 	else mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
@@ -334,7 +334,7 @@ mp.add_key_binding(kpanleft, "panleft", panleft)
 
 --音声を右のみに
 function panright()
-	if mp.get_property_number("audio-channels") == 1 then
+	if mp.get_property_number("audio-channels",0) == 1 then
 	mp.set_property("af", "pan=2:[ 1 , 1 ]") 
 	end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
@@ -503,12 +503,51 @@ function to1920x1440()
 end
 mp.add_key_binding( k1920x1440, "1920x1440", to1920x1440)
 
-function tow20per()
-	local targetsize = "25%"
---	changewindowsize(targetsize,"",2)
-	mp.set_property("vf","dsize=" .. targetsize ..":".."-2"..":".. 2 .."::0")
-	mp.set_property_number("window-scale" , 1)
+function minimize()
+	local targetsize = {16 , 12}
+	if	mp.get_property_number("osd-height", 0) >= 40 then
+		if	mp.get_property("fullscreen") == "yes" then
+			fullscreened = 1
+--			mp.commandv("cycle" , "fullscreen" )
+			fullscreen()
+			mp.add_timeout(0.05, (function()oldwidth, oldheight = mp.get_screen_size()end))
+--			print(oldwidth)
+--			oldheight = mp.get_property_number("osd-height", 0)
+			mp.add_timeout(0.10, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)end))
+		else
+			oldwidth, oldheight = mp.get_screen_size()
+--			oldwidth = mp.get_property_number("osd-width", 0)
+--			oldheight = mp.get_property_number("osd-height", 0)
+			changewindowsize(targetsize[1] , targetsize[2] , -1)
+		end
+	else	if	fullscreened == 1 then
+			changewindowsize(oldwidth , oldheight , -1)
+			fullscreen()
+--			mp.commandv("cycle" , "fullscreen" )
+			fullscreened = 0
+		else				print(oldwidth)
+			changewindowsize(oldwidth , oldheight , 2)
+		end
 
-	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
+	end
+--	changewindowsize(targetsize,"",2)
+--	mp.set_property("vf","dsize=" .. targetsize ..":".."-2"..":".. 2 .."::0")
+--	mp.set_property_number("window-scale" , 1)
+
+--	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
 end
-mp.add_key_binding( "KP3" , "tow20per", tow20per)
+mp.add_key_binding( kminimize , "minimize", minimize)
+
+function minmute()
+
+	if	mp.get_property_number("osd-height", 0) > 40  then
+--	print(mp.get_property_number("osd-height", 0))
+		muted = mp.get_property("mute","no")
+		mp.set_property("mute" , "yes")
+	else	mp.set_property("mute" , muted)
+		--muted
+		
+	end
+	minimize()
+end
+mp.add_key_binding( kminmute , "minmute", minmute)

@@ -16,11 +16,11 @@ function errorproof(case)
 	local hantei
 --	print(case)
 	if 	case == "path" then
-		if 	string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
+		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
 			hantei = 1
 		end
 	elseif	case == "firststart" then
-		if 	mp.get_property_number("playlist-count")  < 3 then
+		if mp.get_property_number("playlist-count")  < 3 then
 			hantei = 1
 		end
 	elseif	case == "playing" then
@@ -100,7 +100,7 @@ function getstreampos()
 			streampos = mp.get_property("stream-pos", 0)
 			print(streampos)
 		end
-		if streampos == nil then
+		if 	streampos == 0 then
 			print("get_streampos_fail")
 			--refresh()
 		end
@@ -113,14 +113,14 @@ mp.add_key_binding("-", "test3",getstreampos)
 --キャッシュ取得
 function getcache()
 	local cache,demuxed
-	if 	mp.get_property("paused-for-cache") == "no" then--and mp.get_property("cache-used") ~= nil then
+--	if 	mp.get_property("paused-for-cache") == "no" then--and mp.get_property("cache-used") ~= nil then
 		cache = mp.get_property_number("cache-used", 0)
 		demuxed = mp.get_property_number("demuxer-cache-duration", 0)
-	else
-		print("getcachefail")
-		cache = 0
-		demuxed = 0
-	end
+--	else
+		--print("getcachefail")
+--		cache = 0
+--		demuxed = 0
+--	end
 	
 --	if cache == nil or demuxed == nil then cache,demuxed = 0,0
 --	end
@@ -379,24 +379,28 @@ function autospeed(name, value)
 end
 --mp.observe_property("cache-used", "number", autospeed)
 
-
 function test()
 --	mp.set_property("stream-pos" , 0 )
 --	print(mp.get_property("stream-capture"))
 --	print(mp.get_property("time-pos"))
 --	print(mp.get_property("fps"))
 --	print(mp.get_property("speed"))
-	print(mp.get_property("playback-time"))
-	print(mp.get_property("time-pos"))
+--	print(mp.get_property("playback-time"))
+--	print(mp.get_property("time-pos"))
 --	print(errorproof("\"cache-used\""))
-	print(mp.get_property("time-start"))
-	print(mp.get_property("window-minimized"))
-	print(os.getenv("USERPROFILE").."\\my pictures\\")
+--	print(mp.get_property("time-start"))
+--	print(mp.get_property("window-minimized"))
+--	print(os.getenv("USERPROFILE").."\\my pictures\\")
 --	print(os.execute("intWindowStyle"))
-	if mp.get_property_number("packet-video-bitrate") then print("true")
-	else	print("false")
-	end
-	print(mp.get_property("fps"))
+--	if mp.get_property_number("packet-video-bitrate") then print("true")
+--	else	print("false")
+--	end
+--	print(mp.get_property("track-list/2/codec"))
+a = {mp.get_screen_size()}
+print(a[2])
+print(mp.get_screen_margins)
+print(mp.get_osd_resolution())
+print(size:width())
 
 end
 mp.add_key_binding("KP8", "test" , test)
@@ -442,24 +446,26 @@ count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
 --	reconnectlua()
-	if 	errorproof("playing") and not errorproof("firststart") then
-		if not errorproof("errordata") then
-			mp.add_timeout(0.1, getstatus)
-			if not tbarlist then tbarlist = mp.get_property("media-title")
+	if	errorproof("path") then
+		if 	errorproof("playing") and not errorproof("firststart") then
+			if not errorproof("errordata") then
+				getstatus()
+				if not tbarlist then tbarlist = mp.get_property("media-title")
+				end
+				mp.set_property("options/title", tbarlist )
+--				mp.add_timeout(0.8, getstatus)
+			else	errordata()
 			end
-			mp.set_property("options/title", tbarlist )
---			mp.add_timeout(0.8, getstatus)
-		else	errordata()
-		end
-	else 
-		print("buffer?")
-		if	errorproof("firststart") then
-			count = count + 1
-			if	count >= 15 then refresh()
-				count = 0
+		else 
+			
+			if	errorproof("firststart") then
+				count = count + 1
+				if	count >= 15 then refresh()
+					count = 0
+				end
 			end
+					
 		end
-				
 	end
 end))
 
