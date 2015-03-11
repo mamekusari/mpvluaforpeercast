@@ -4,7 +4,7 @@
 
 --初期設定
 --ボリューム関係
-ivolume = 11				--初期ボリューム。0-100
+ivolume = 13				--初期ボリューム。0-100
 volume = 5				--マウスホイールの変更量
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
@@ -19,7 +19,7 @@ ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\が
 istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
 icursorhide = 2				--マウスカーソルを自動的に隠す。「2」はフルスクリーンのみ隠す
 iontop = 0				--最前面表示（うまく動かない?）
-iosc = 1				--オンスクリーンコントローラーのオンオフ
+iosc = 0				--オンスクリーンコントローラーのオンオフ
 recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
 
@@ -42,11 +42,12 @@ kmute = "MOUSE_BTN1"			--ミュート（マウス中クリック）
 --プレイヤーの状態
 kminimize = "+"				--最小化のようなもの（+）
 kfullscreen = "Alt+Enter"		--フルスクリーン（alt押しながらenter）
+kfullscreen2 = "MOUSE_BTN0_DBL"		--フルスクリーン2つめ（左ダブルクリック）
 kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
-kminmute = "MOUSE_BTN0_DBL"		--最小化のようなものと同時にミュート（左ダブルクリック）
+kminmute = "-"				--最小化のようなものと同時にミュート（-）
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
-kosc = "Del"				--oscオンオフ（delete）
+kosc = "Del"				--oscオンオフ（insert）
 
 --リレー操作
 kstop = "Alt+x"				--リレー切断（alt押しながらx）
@@ -81,7 +82,6 @@ k25 = "8"
 
 
 --ここからスクリプトの処理コード
-orgwidth , orgheight = 0,0
 mp.set_property("options/volume", ivolume )
 tbarlist = mp.get_property("options/title")
 mp.set_property("options/cursor-autohide" , "3000" )
@@ -89,62 +89,42 @@ mp.set_property("options/cursor-autohide-fs-only", "no" )
 if icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
 elseif icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
 end
---mp.set_property("options/ontop", "yes")
---if iontop == 0 then mp.commandv("cycle", "ontop")--mp.set_property("options/ontop" , "no")
---end
 mp.set_property("options/screenshot-format", sstype )
 mp.set_property("options/screenshot-jpeg-quality", jpgquality )
 mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
 if sssize == 0 then sssize = "window" 
 else sssize = "video"
 end
-mp.set_property("options/network-timeout", 5)
-mp.set_property("loop", "force")
---mp.enable_messages("info")
-print(mp.get_property("options/network-timeout"))
-print(mp.get_property("options/cursor-autohide"))
-print(mp.get_property("options/cursor-autohide-fs-only"))
-print(mp.get_property("options/border"))
-print(mp.get_property("options/ontop"))
-print(mp.get_property("loop"))
---print(mp.get_property("osd-width"))
 
 function errorproof(case)
 	local hantei
---	print(case)
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
-			hantei = 1
+			hantei = true
 		end
 	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
-			hantei = 1
+			hantei = true
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			and mp.get_property("playback-time") 
 			and mp.get_property_number("demuxer-cache-duration")
 			then
-			hantei = 1
+			hantei = true
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
-			hantei = 1
-		end
-	elseif case == "errordata" then
-		if	mp.get_property("track-list/2/codec") then
-			hantei = 1
+			hantei = true
 		end
 	elseif	not mp.get_property(case) then
-		hantei = 1
+		hantei = true
 	end
 	return	hantei 
 end
 
 --ファイル情報取得
 function initialize()
-	if errorproof("errordata") and errorproof("playing") then errordata()
-	else
 	if errorproof("path") then
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width", 0)
@@ -152,53 +132,25 @@ function initialize()
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
 		--はじめの設定を適用する
 		if	errorproof("firststart") then
-		print("1")
---			while	mp.get_property_number("osd-width") < 1 do -- os.execute("timeout /t 3")
---			end
-			if 	iosc == 1 then mp.commandv("script-message", "enable-osc")
+			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
 			else	mp.commandv("script_message", "disable-osc")
 			end
---			if	 istatusbar == 1 then
---				if mp.get_property("options/border") == "no" then mp.set_property("options/border", "yes")
---				end
---			elseif mp.get_property("options/border") == "yes" then mp.set_property("options/border", "no")
---			end
 			if	istatusbar == 1 and mp.get_property("border") == "no" then
 				mp.commandv("cycle", "border")
 			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
 				mp.commandv("cycle", "border")
 			end
---			if	iontop == 1 then
---				if	mp.get_property("options/ontop") == "no" then mp.set_property("options/ontop", "yes")
---				end
---			elseif	mp.get_property("options/ontop") == "yes" then mp.set_property("options/ontop", "no")
---			end
 			if	iontop == 1 and mp.get_property("ontop") == "no" then
 				mp.commandv("cycle", "ontop")
 			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
 				mp.commandv("cycle", "ontop")
 			end
-		print("2")
 		end
 		mp.set_property("loop", "inf")
 	else print("notpecapath")
-	end	
 	end
 end
 mp.register_event("file-loaded", initialize)
-
-function gettime(type)
-	local time = os.date("*t")
-	
-	if 	type == "y" then time = time["year"]
-	elseif	type == "m" then time = time["month"]
-	elseif	type == "d" then time = time["day"]
-	elseif	type == "h" then time = time["hour"]
-	elseif	type == "m" then time = time["min"]
-	elseif	type == "s" then time = time["sec"]
-	end
-	return time
-end
 
 function refresh()
 	if	errorproof("path") then
@@ -213,16 +165,12 @@ end
 function record()
 	if	errorproof("path") and errorproof("playing") then
 		if	mp.get_property("stream-capture") == "" then
---		if	recording == nil or recording == 0 then
---			local date = gettime("y")..gettime("m")..gettime("d").."_"..gettime("h")..gettime("m")..gettime("s")
 			local date = os.date("%y%m%d_%H%M%S")
 			refresh()
 			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
 			mp.osd_message("record_start",3)
---			recording = 1
 		else	mp.set_property("stream-capture" , "" )
 			mp.osd_message("record_end",3)
---			recording = 0
 		end
 	end
 end
@@ -233,7 +181,6 @@ mp.add_key_binding(krecord,"record" , record)
 function changewindowsize(newwidth , newheight , kurobuti)
 	mp.set_property("vf","dsize=" .. math.floor(newwidth) ..":".. math.floor(newheight) ..":".. kurobuti .."::0")
 	mp.set_property_number("window-scale" , 1)
-
 	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
 end
 
@@ -243,27 +190,25 @@ function getpath()
     local id = {string.find(fullpath,"/stream/(%x*)")}
     local a = {}
     for i in string.gmatch(fullpath, "[^/]+") do
-      table.insert(a, i)
+	table.insert(a, i)
     end
     return fullpath,a[2],id[3]
 end
 
 --osc切り替え
 function osc()
-	if 	mp.get_property("osc") then
-		while mp.get_property("osc") do --mp.commandv("script_message", "disable-osc")
+	if 	iosc == 1 then
 		mp.commandv("script_message", "disable-osc")
-		end
-			print("run")
+		iosc = 0
 	else	mp.commandv("script_message", "enable-osc")
+		iosc = 1
 	end
-
 end
-mp.add_key_binding(kosc, "osc", osc)
+mp.add_forced_key_binding(kosc, "osc", osc)
 
 --スクリーンショット
 function screenshot()
-	if errorproof("playing") then
+	if 	errorproof("playing") then
 		mp.commandv("screenshot" , sssize )
 		mp.osd_message("screenshot")
 	end
@@ -315,7 +260,7 @@ mp.add_key_binding(kvoldown3, "sreducevolume_wheel", sreducevolume)
 --ミュート
 function mute()
 	mp.commandv("cycle", "mute")
-	if mp.get_property("mute") == "yes" then
+	if 	mp.get_property("mute") == "yes" then
 		mp.osd_message("mute")
 	else	mp.osd_message("mute_off")
 	end
@@ -324,9 +269,9 @@ mp.add_key_binding( kmute, "mute", mute)
 
 --音声を左のみに
 function panleft()
-	if mp.get_property_number("audio-channels",0) == 1 then
-	mp.set_property("af", "pan=2:[ 1 , 0 ]")
-	else mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
+	if 	mp.get_property_number("audio-channels",0) == 1 then
+		mp.set_property("af", "pan=2:[ 1 , 0 ]")
+	else 	mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
 	mp.osd_message("pan_left")
 end
@@ -334,8 +279,8 @@ mp.add_key_binding(kpanleft, "panleft", panleft)
 
 --音声を右のみに
 function panright()
-	if mp.get_property_number("audio-channels",0) == 1 then
-	mp.set_property("af", "pan=2:[ 1 , 1 ]") 
+	if	mp.get_property_number("audio-channels",0) == 1 then
+		mp.set_property("af", "pan=2:[ 1 , 1 ]") 
 	end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
 	mp.osd_message("pan_right")
@@ -361,6 +306,7 @@ function fullscreen()
 	mp.commandv("cycle" , "fullscreen")
 end
 mp.add_key_binding(kfullscreen, "fullscreen", fullscreen)
+mp.add_key_binding(kfullscreen2, "fullscreen2", fullscreen)
 
 --終了
 function exit()
@@ -377,31 +323,32 @@ mp.add_key_binding(kstatusbar, "titlebar", titlebar)
 --最前面表示切り替え
 function ontop()
 	mp.commandv("cycle", "ontop")
-	if mp.get_property_bool("ontop")
-	then mp.osd_message("ontop")
-	else mp.osd_message("ontop_off")
+	if	mp.get_property_bool("ontop")	then
+		mp.osd_message("ontop")
+	else 	mp.osd_message("ontop_off")
 	end
 end
 mp.add_key_binding(kontop, "ontop", ontop)
 
 --リレー再接続
 function bump()
-	if errorproof("path") then
-	local streampath,localhost,streamid = getpath()
-	mp.commandv("playlist_clear")
-	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
-	for i = 0 , 2 do mp.commandv("loadfile", streampath , "append") end
-	mp.commandv("playlist_next")
-	mp.osd_message("bump",3)
+	if	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		mp.commandv("playlist_clear")
+		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append")
+		end
+		mp.commandv("playlist_next")
+		mp.osd_message("bump",3)
 	end
 end
 mp.add_key_binding(kbump, "bump" , bump)
 
 --リレー切断
 function stop()
-	if errorproof("path") then
-	local streampath,localhost,streamid = getpath()
-	mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
+	if 	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
 	end
 end
 mp.add_key_binding(kstop, "stop" , stop)
@@ -508,45 +455,29 @@ function minimize()
 	if	mp.get_property_number("osd-height", 0) >= 40 then
 		if	mp.get_property("fullscreen") == "yes" then
 			fullscreened = 1
---			mp.commandv("cycle" , "fullscreen" )
 			fullscreen()
-			mp.add_timeout(0.05, (function()oldwidth, oldheight = mp.get_screen_size()end))
---			print(oldwidth)
---			oldheight = mp.get_property_number("osd-height", 0)
-			mp.add_timeout(0.10, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)end))
+			mp.add_timeout(0.10, (function()oldwidth, oldheight = mp.get_screen_size()end))
+			mp.add_timeout(0.15, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)end))
 		else
 			oldwidth, oldheight = mp.get_screen_size()
---			oldwidth = mp.get_property_number("osd-width", 0)
---			oldheight = mp.get_property_number("osd-height", 0)
 			changewindowsize(targetsize[1] , targetsize[2] , -1)
 		end
 	else	if	fullscreened == 1 then
 			changewindowsize(oldwidth , oldheight , -1)
 			fullscreen()
---			mp.commandv("cycle" , "fullscreen" )
 			fullscreened = 0
-		else				print(oldwidth)
+		else
 			changewindowsize(oldwidth , oldheight , 2)
 		end
-
 	end
---	changewindowsize(targetsize,"",2)
---	mp.set_property("vf","dsize=" .. targetsize ..":".."-2"..":".. 2 .."::0")
---	mp.set_property_number("window-scale" , 1)
-
---	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
 end
 mp.add_key_binding( kminimize , "minimize", minimize)
 
 function minmute()
-
 	if	mp.get_property_number("osd-height", 0) > 40  then
---	print(mp.get_property_number("osd-height", 0))
 		muted = mp.get_property("mute","no")
 		mp.set_property("mute" , "yes")
 	else	mp.set_property("mute" , muted)
-		--muted
-		
 	end
 	minimize()
 end
