@@ -2,12 +2,12 @@
 
 --ステータス表示
 showtype = 1				--ビデオコーデック「1」かコンテナ表示「2」
-showsize = 1				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
-showbitrate = 1				--キーフレーム間のビットレート表示
+showsize = 3				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
+showbitrate = 1				--キーフレーム間のビットレート表示。キーフレーム2枚来るまで小さい値になります。
 showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
-showcache = 2				--キャッシュサイズを表示。「2」でdemuxされた分も表示
+showcache = 1				--大体のバッファサイズを表示。「2」でdemux+cacheの表示
 showplaytime = 1			--再生時間（たまに総配信時間）を表示
-enableautospeed = 1			--キャッシュ量の自動調整。「2」でたまったときだけ調整
+enableautospeed = 2			--キャッシュ量の自動調整。「2」でたまったときだけ調整
 
 
 
@@ -39,17 +39,34 @@ function errorproof(case)
 	return	hantei 
 end
 
+function bump()
+	if	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		mp.commandv("playlist_clear")
+		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append")
+		end
+		mp.commandv("playlist_next")
+		mp.osd_message("bump",3)
+	end
+end
+
 function avsync(name,value)
 	if	value ~= nil and math.abs(value) > 2 then
-		mp.commandv("drop_buffers")
-		print("outofsync: "..value)
+		if	math.abs(value) > 100 then
+			bump()
+			--mp.osd_message("wrong relay bump",3)
+			print("avsync:"..value)
+		else	mp.commandv("drop_buffers")
+			print("outofsync: "..value)
+		end
 	end
 end
 mp.observe_property("avsync", "number", avsync)
 
 function ct(name,value)
 	if	value ~= nil and math.abs(value) > 2 then
-		mp.commandv("drop_buffers") 
+		mp.commandv("playlist_next") 
 		print("outofct: "..value)
 	end
 end
@@ -67,14 +84,6 @@ function getstreampos()
 	return streampos
 end
 mp.add_key_binding("*", "test3",getstreampos)
---キャッシュ取得
-function getcache()
-	local cache,demuxed
-	cache = mp.get_property_number("cache-used", 0)
-	demuxed = mp.get_property_number("demuxer-cache-duration", 0)
-	return cache,demuxed
-end
-
 --ビットレート取得
 function getbitrate()
 	--キーフレーム間のビットレートを計測する方法
@@ -103,6 +112,18 @@ function getbitrate()
 	return brate
 end
 
+--キャッシュ取得
+function getcache()
+	local cache,demuxed,sec
+	cache = mp.get_property_number("cache-used", 0)
+	demuxed = mp.get_property_number("demuxer-cache-duration", 0)
+	if	mp.get_property("packet-video-bitrate", 0) ~= 0 then
+		sec = cache/(getbitrate() /8 ) + demuxed
+	else	sec = 0
+	end
+	return cache,demuxed,sec
+end
+
 --解像度取得
 function getresolution(tateyoko)
 	if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
@@ -113,14 +134,15 @@ function getresolution(tateyoko)
 	return tateyoko
 end
 
+--ステータス集めて渡す
 function getstatus()
-	local currentsize,cache,demuxed,size,rate
+	local currentsize,cache,demuxed,sec,size,rate
 	local t = {}
 	--録画チェック
 	t.rec = mp.get_property("stream-capture")
 	if 	t.rec ~= "" then t.rec = "rec"
-	else	t.rec = ""
 	end
+	
 	if	not showsize or showsize > 3 then size = ""
 	else
 		if	showsize == 3 then
@@ -171,12 +193,13 @@ function getstatus()
 	else	t.time = mp.get_property_osd("playback-time", 0)
 	end
 	
-	cache,demuxed = getcache()
+	cache,demuxed,sec = getcache()
 	if	showcache == 0 then t.cache = ""
-	elseif	showcache == 1 then t.cache = string.format("c:%03dKB" , cache)
-	else	t.cache = string.format("%3.1fs+%03dKB",demuxed,cache)
+	elseif	showcache == 1 then t.cache = string.format("%3.1fs",sec)
+	elseif	showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demuxed,cache)
 	end
 	
+	--キャッシュ自動調整するときの判定はautospeed関数でする
 	if	enableautospeed ~= 0 then autospeed("",cache)
 	end
 	
@@ -239,19 +262,20 @@ function autospeed(name, value)
 		local highspeed = 1.01 		--速くしたときの再生速度
 		if	enableautospeed == 2 then lowspeed = 1
 		end
-		if 	value > normal1 and value < normal2 then
+		if 	value+demuxbuffer*brate/8 > normal1+brate*2/8 and value+demuxbuffer*brate/8 < normal2+brate*2/8 then
 			mp.set_property("speed", 1.00)
-		elseif	value < low and demuxbuffer <= lowdemuxed then
+		elseif	value+demuxbuffer*brate/8 < low+brate*2/8 then--and demuxbuffer <= lowdemuxed then
 			mp.set_property("speed", lowspeed)
-		elseif value > high then
+		elseif value+demuxbuffer*brate/8 > high+brate*2/8 then
 			mp.set_property("speed", highspeed)
-		elseif mp.get_property_number("speed") <= lowspeed and value > normal1 then
+		elseif mp.get_property_number("speed") <= lowspeed and value+demuxbuffer*brate/8 > normal1+brate*2/8 then
 			mp.set_property("speed", 1.00)
-		elseif mp.get_property_number("speed") >= highspeed and value < normal2 then
+		elseif mp.get_property_number("speed") >= highspeed and value+demuxbuffer*brate/8 < normal2+brate*2/8 then
 			mp.set_property("speed", 1.00)
 		end
 	else	mp.set_property("speed", 1.00)
 	end
+
 end
 
 function test()

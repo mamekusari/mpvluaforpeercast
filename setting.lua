@@ -47,7 +47,7 @@ kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
 kminmute = "-"				--最小化のようなものと同時にミュート（-）
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
-kosc = "Del"				--oscオンオフ（insert）
+kosc = "Ins"				--oscオンオフ（insert）
 
 --リレー操作
 kstop = "Alt+x"				--リレー切断（alt押しながらx）
