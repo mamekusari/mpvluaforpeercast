@@ -54,6 +54,7 @@ end
 function avsync(name,value)
 	if	value ~= nil and math.abs(value) > 2 then
 		if	math.abs(value) > 100 then
+			mp.commandv("drop_buffers")
 			bump()
 			--mp.osd_message("wrong relay bump",3)
 			print("avsync:"..value)
@@ -73,11 +74,10 @@ end
 mp.observe_property("total-avsync-change", "number", ct)
 
 function getstreampos()
-	if	mp.get_property_number("demuxer-cache-duration", 0) >= 0.5 then
-		print("1")
-		local streampos = mp.get_property("stream-pos", 0)
-		print(streampos)
-	end
+	local streampos
+	print("1")
+	streampos = mp.get_property("stream-pos", 0)
+	print(streampos)
 	if 	streampos == 0 then
 		print("get_streampos_fail")
 	end
@@ -108,7 +108,6 @@ function getbitrate()
 --			brate = (brate + (streampos - srate) /1024 * 8)/2
 --			srate = streampos
 --		end
---	end
 	return brate
 end
 
@@ -191,6 +190,9 @@ function getstatus()
 	
 	if	showplaytime ~= 1 then t.time = ""
 	else	t.time = mp.get_property_osd("playback-time", 0)
+	end
+	if	mp.get_property_bool("core-idle") then
+		t.time = "buffering"
 	end
 	
 	cache,demuxed,sec = getcache()
