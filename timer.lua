@@ -116,10 +116,14 @@ function getcache()
 	local cache,demuxed,sec
 	cache = mp.get_property_number("cache-used", 0)
 	demuxed = mp.get_property_number("demuxer-cache-duration", 0)
-	if	mp.get_property("packet-video-bitrate", 0) ~= 0 then
+	if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
 		sec = cache/(getbitrate() /8 ) + demuxed
 	else	sec = 0
 	end
+	if	sec ~= sec or getbitrate() == 0 then sec = "-"
+	else	sec = string.format("%3.1fs",sec)
+	end
+
 	return cache,demuxed,sec
 end
 
@@ -138,7 +142,7 @@ function getstatus()
 	local currentsize,cache,demuxed,sec,size,rate
 	local t = {}
 	--録画チェック
-	t.rec = mp.get_property("stream-capture")
+	t.rec = mp.get_property("stream-capture","")
 	if 	t.rec ~= "" then t.rec = "rec"
 	end
 	
@@ -194,10 +198,13 @@ function getstatus()
 	if	mp.get_property_bool("core-idle") then
 		t.time = "buffering"
 	end
+	if	mp.get_property_bool("idle") then
+		t.time = "search"
+	end
 	
 	cache,demuxed,sec = getcache()
 	if	showcache == 0 then t.cache = ""
-	elseif	showcache == 1 then t.cache = string.format("%3.1fs",sec)
+	elseif	showcache == 1 then t.cache = sec
 	elseif	showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demuxed,cache)
 	end
 	
@@ -216,6 +223,10 @@ end
 
 
 --ファイル情報取得
+fps = 0
+orgsize = "0x0"
+tmediatitle = ""
+ttype = ""
 function inittimer()
 	if 	errorproof("path") then
 --		print("initialize")
@@ -299,10 +310,10 @@ function test()
 --	print(mp.get_property("track-list/2/codec"))
 mp.set_property("options/autofit" , "50%")
 a = {mp.get_osd_resolution()}
-print(mp.format_time())
 mp.set_property("options/no-window-dragging", "yes")
 print(mp.get_property("monitorpixelaspect"))
 print(mp.get_property("video-aspect"))
+print(mp.get_property("stream-capture",""))
 
 end
 mp.add_key_binding("KP8", "test" , test)
@@ -335,7 +346,7 @@ count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
 	if	errorproof("path") then
-		if 	errorproof("playing") and not errorproof("firststart") then
+		if 	not errorproof("firststart") then
 			mp.set_property("options/title", getstatus() )
 		else 			
 			if	errorproof("firststart") then
