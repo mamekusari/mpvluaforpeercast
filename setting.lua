@@ -13,7 +13,7 @@ shiftvolume = 1				--shift押しながらの時
 sstype = "jpg"				--「"png"」又は「"jpg"」
 jpgquality = 90				--jpgの時の画質。0-100
 sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
-ssfolder = "d:\\a b\\" 			--保存場所。区切りは｢\\｣で最後の\\がないとファイル名に化けます
+ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣で最後の\\がないとファイル名に化けます。「""」でmpv.exeのフォルダになります
 
 --その他
 istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
@@ -83,7 +83,6 @@ k25 = "8"
 
 --ここからスクリプトの処理コード
 mp.set_property("options/volume", ivolume )
-tbarlist = mp.get_property("options/title")
 mp.set_property("options/cursor-autohide" , "3000" )
 mp.set_property("options/cursor-autohide-fs-only", "no" )
 if icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
@@ -215,23 +214,33 @@ function screenshot()
 end
 mp.add_key_binding(kscreenshot, "screenshot", screenshot)
 
+function volmessage()
+	local vol = mp.get_property("volume")
+	if	not vol then vol = "volume:-"
+	else	vol = string.format("volume:%d", vol)
+	end
+	if	mp.get_property_bool("mute") then vol = vol .. "(mute)"
+	end
+	mp.osd_message(vol)
+end
+
 --ボリューム上げる
 function gainvolume()
 	mp.commandv("add", "volume", volume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding(kvolup, "gainvolume", gainvolume)
 mp.add_key_binding(kvolup_wheel, "gainvolume_wheel", gainvolume)
 
 function cgainvolume()
 	mp.commandv("add", "volume", ctrlvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding(kvolup2, "cgainvolume_wheel", cgainvolume)
 
 function sgainvolume()
 	mp.commandv("add", "volume", shiftvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding("Shift+Up", "sgainvolume", sgainvolume)
 mp.add_key_binding(kvolup3, "sgainvolume_wheel", sgainvolume)
@@ -239,30 +248,32 @@ mp.add_key_binding(kvolup3, "sgainvolume_wheel", sgainvolume)
 --ボリューム下げる
 function reducevolume()
 	mp.commandv("add", "volume", -1 * volume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding(kvoldown, "reducevolume", reducevolume)
 mp.add_key_binding(kvoldown_wheel, "reducevolume_wheel", reducevolume)
 
 function creducevolume()
 	mp.commandv("add", "volume", -1 * ctrlvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding(kvoldown2, "creducevolume_wheel", creducevolume)
 
 function sreducevolume()
 	mp.commandv("add", "volume", -1 * shiftvolume)
-	mp.osd_message(string.format("volume:%d",mp.get_property("volume", 0)))
+	volmessage()
 end
 mp.add_key_binding("Shift+Down", "sreducevolume", sreducevolume)
 mp.add_key_binding(kvoldown3, "sreducevolume_wheel", sreducevolume)
 
 --ミュート
 function mute()
-	mp.commandv("cycle", "mute")
-	if 	mp.get_property("mute") == "yes" then
-		mp.osd_message("mute")
-	else	mp.osd_message("mute_off")
+	if	errorproof("playing")	then
+		mp.commandv("cycle", "mute")
+		if 	mp.get_property_bool("mute") then
+			mp.osd_message("mute")
+		else	mp.osd_message("mute_off")
+		end
 	end
 end
 mp.add_key_binding( kmute, "mute", mute)
@@ -454,7 +465,7 @@ function minimize()
 	local targetsize = {16 , 12}
 	if	mp.get_property_number("osd-height", 0) >= 40 then
 		if	mp.get_property("fullscreen") == "yes" then
-			fullscreened = 1
+			fullscreened = true
 			fullscreen()
 			mp.add_timeout(0.10, (function()oldwidth, oldheight = mp.get_screen_size()end))
 			mp.add_timeout(0.15, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)end))
@@ -462,10 +473,10 @@ function minimize()
 			oldwidth, oldheight = mp.get_screen_size()
 			changewindowsize(targetsize[1] , targetsize[2] , -1)
 		end
-	else	if	fullscreened == 1 then
+	else	if	fullscreened then
 			changewindowsize(oldwidth , oldheight , -1)
 			fullscreen()
-			fullscreened = 0
+			fullscreened = false
 		else
 			changewindowsize(oldwidth , oldheight , 2)
 		end
