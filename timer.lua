@@ -233,6 +233,7 @@ function inittimer()
 --		vrate,arate,srate,brate = 0,0,0,0
 		if	string.find(mp.get_property("media-title"), string.rep("%x", 32)) then
 			tmediatitle = mp.get_property("options/title")
+			mp.set_property("options/media-title",tmediatitle)
 		else	tmediatitle = mp.get_property("media-title")
 		end
 		--動画サイズ取得
