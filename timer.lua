@@ -1,13 +1,13 @@
 --タイトルバー用情報取得タイマーのlua。0で非表示になります
 
---ステータス表示
+--ステータス表示とか
 showtype = 1				--ビデオコーデック「1」かコンテナ表示「2」
 showsize = 3				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
 showbitrate = 1				--キーフレーム間のビットレート表示。キーフレーム2枚来るまで小さい値になります。
 showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
 showcache = 1				--大体のバッファサイズを表示。「2」でdemux+cacheの表示
 showplaytime = 1			--再生時間（たまに総配信時間）を表示
-enableautospeed = 2			--キャッシュ量の自動調整。「2」でたまったときだけ調整
+enableautospeed = 2			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
 
 
 
@@ -231,7 +231,10 @@ function inittimer()
 	if 	errorproof("path") then
 --		print("initialize")
 --		vrate,arate,srate,brate = 0,0,0,0
-		tmediatitle = mp.get_property("media-title")
+		if	string.find(mp.get_property("media-title"), string.rep("%x", 32)) then
+			tmediatitle = mp.get_property("options/title")
+		else	tmediatitle = mp.get_property("media-title")
+		end
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width", 0)
 		orgheight = mp.get_property("height", 0)
