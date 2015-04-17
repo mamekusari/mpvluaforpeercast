@@ -5,7 +5,7 @@
 --初期設定
 --ボリューム関係
 ivolume = 13				--初期ボリューム。0-100
-volume = 5				--マウスホイールの変更量
+volume = 5				--マウスホイールの変更量（下のキー割り当てを変えたらそのキーでの変更量）
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
@@ -16,9 +16,9 @@ sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣で最後の\\がないとファイル名に化けます。「""」でmpv.exeのフォルダになります
 
 --その他
-istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ（うまく動かない）
-icursorhide = 2				--マウスカーソルを自動的に隠す。「2」はフルスクリーンのみ隠す
-iontop = 0				--最前面表示（うまく動かない?）
+istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ
+icursorhide = 2				--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
+iontop = 0				--最前面表示
 iosc = 0				--オンスクリーンコントローラーのオンオフ
 recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
@@ -96,30 +96,25 @@ else sssize = "video"
 end
 
 function errorproof(case)
-	local hantei
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
-			hantei = true
+			return true
 		end
 	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
-			hantei = true
+			return true
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			and mp.get_property("playback-time") 
-			and mp.get_property_number("demuxer-cache-duration")
-			then
-			hantei = true
+			and mp.get_property_number("demuxer-cache-duration") then
+			return true
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
-			hantei = true
+			return true
 		end
-	elseif	not mp.get_property(case) then
-		hantei = true
 	end
-	return	hantei 
 end
 
 --ファイル情報取得
@@ -133,19 +128,20 @@ function initialize()
 		if	errorproof("firststart") then
 			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
 			else	mp.commandv("script_message", "disable-osc")
+				mp.add_timeout(0.05, (function()mp.commandv("script_message", "disable-osc")end))
 			end
 			if	istatusbar == 1 and mp.get_property("border") == "no" then
-				mp.commandv("cycle", "border")
+				mp.add_timeout(0.05, (function()mp.commandv("cycle", "border")end))
 			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
-				mp.commandv("cycle", "border")
+				mp.add_timeout(0.05, (function()mp.commandv("cycle", "border")end))
 			end
 			if	iontop == 1 and mp.get_property("ontop") == "no" then
-				mp.commandv("cycle", "ontop")
+				mp.add_timeout(0.05, (function()mp.commandv("cycle", "ontop")end))
 			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
-				mp.commandv("cycle", "ontop")
+				mp.add_timeout(0.05, (function()mp.commandv("cycle", "ontop")end))
 			end
 		end
-		mp.set_property("loop", "inf")
+--		mp.set_property("loop", "inf")
 	else print("notpecapath")
 	end
 end
@@ -198,6 +194,8 @@ end
 function osc()
 	if 	iosc == 1 then
 		mp.commandv("script_message", "disable-osc")
+		--1回だとosc写っていない時にしてもosc表示されるだけなのでもう1回送る
+		mp.add_timeout(0.1, (function()mp.commandv("script_message", "disable-osc")end))
 		iosc = 0
 	else	mp.commandv("script_message", "enable-osc")
 		iosc = 1
