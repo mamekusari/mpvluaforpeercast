@@ -3,9 +3,10 @@
 
 
 --初期設定
---ボリューム関係
-ivolume = 13				--初期ボリューム。0-100
-volume = 5				--マウスホイールの変更量（下のキー割り当てを変えたらそのキーでの変更量）
+--ボリューム関係			--下の方にあるキー割り当てを変えたらホイールとかcontrolとかはそのキーに変わります
+ivolume = 50				--初期ボリューム
+maxvolume = 130				--ボリュームの最大値。130で大体100の2倍の音量になります
+volume = 5				--マウスホイールの変更量
 ctrlvolume = 3				--control押しながらの時
 shiftvolume = 1				--shift押しながらの時
 
@@ -15,11 +16,11 @@ jpgquality = 90				--jpgの時の画質。0-100
 sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
 ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣で最後の\\がないとファイル名に化けます。「""」でmpv.exeのフォルダになります
 
---その他
-istatusbar = 1				--ステータスバー（の代わりのタイトルバー）のオンオフ
+--その他				--保存フォルダ以外は0で無効になります
+istatusbar = 1				--ステータスバー（の代わりのタイトルバー）
 icursorhide = 2				--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
 iontop = 0				--最前面表示
-iosc = 0				--オンスクリーンコントローラーのオンオフ
+iosc = 0				--オンスクリーンコントローラー
 recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
 
@@ -80,8 +81,9 @@ k25 = "8"
 
 
 
-
 --ここからスクリプトの処理コード
+mp.set_property("options/softvol", "yes" )
+mp.set_property("options/softvol-max", maxvolume )
 mp.set_property("options/volume", ivolume )
 mp.set_property("options/cursor-autohide" , "3000" )
 mp.set_property("options/cursor-autohide-fs-only", "no" )
@@ -117,6 +119,9 @@ function errorproof(case)
 	end
 end
 
+if	iosc == 0 then mp.set_property_bool("options/osc", false) 
+end
+
 --ファイル情報取得
 function initialize()
 	if errorproof("path") then
@@ -129,6 +134,7 @@ function initialize()
 			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
 			else	mp.commandv("script_message", "disable-osc")
 				mp.add_timeout(0.05, (function()mp.commandv("script_message", "disable-osc")end))
+				mp.set_property("options/osc", "no")
 			end
 			if	istatusbar == 1 and mp.get_property("border") == "no" then
 				mp.add_timeout(0.05, (function()mp.commandv("cycle", "border")end))
@@ -141,7 +147,7 @@ function initialize()
 				mp.add_timeout(0.05, (function()mp.commandv("cycle", "ontop")end))
 			end
 		end
---		mp.set_property("loop", "inf")
+		mp.set_property("loop", "yes")
 	else print("notpecapath")
 	end
 end

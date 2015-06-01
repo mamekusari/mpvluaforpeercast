@@ -3,7 +3,7 @@
 --ステータス表示とか
 showtype = 1				--ビデオコーデック「1」かコンテナ表示「2」
 showsize = 3				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
-showbitrate = 1				--キーフレーム間のビットレート表示。キーフレーム2枚来るまで小さい値になります。
+showbitrate = 1				--キーフレーム間のビットレート表示。キーフレーム2枚来るまで小さい値になります
 showfps = 1				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
 showcache = 1				--大体のバッファサイズを表示。「2」でdemux+cacheの表示
 showplaytime = 1			--再生時間（たまに総配信時間）を表示
@@ -13,41 +13,24 @@ enableautospeed = 2			--キャッシュ量の自動調整。「2」でたまっ�
 
 --ここからスクリプトの処理コード
 function errorproof(case)
-	local hantei
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
-			hantei = true
+			return true
 		end
 	elseif	case == "firststart" then
 		if mp.get_property_number("playlist-count")  < 3 then
-			hantei = true
+		return true
 		end
 	elseif	case == "playing" then
 		if 	mp.get_property("estimated-vf-fps")
 			and mp.get_property("playback-time") 
-			and mp.get_property_number("demuxer-cache-duration")
-			then
-			hantei = true
+			and mp.get_property_number("demuxer-cache-duration") then
+			return true
 		end
 	elseif	case == "videoonly" then
 		if 	not mp.get_property("aid") then
-			hantei = true
+			return true
 		end
-	elseif	not mp.get_property(case) then
-		hantei = true
-	end
-	return	hantei 
-end
-
-function bump()
-	if	errorproof("path") then
-		local streampath,localhost,streamid = getpath()
-		mp.commandv("playlist_clear")
-		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
-		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append")
-		end
-		mp.commandv("playlist_next")
-		mp.osd_message("bump",3)
 	end
 end
 
@@ -55,11 +38,13 @@ function avsync(name,value)
 	if	value ~= nil and math.abs(value) > 2 then
 		if	math.abs(value) > 100 then
 			mp.commandv("drop_buffers")
-			bump()
-			--mp.osd_message("wrong relay bump",3)
 			print("avsync:"..value)
-		else	mp.commandv("drop_buffers")
-			print("outofsync: "..value)
+--			bump()
+--			addplaylist()
+--			addbumpurl()
+			--mp.osd_message("wrong relay bump",3)
+		else	print("outofsync: "..value)
+			mp.commandv("drop_buffers")
 		end
 	end
 end
@@ -229,11 +214,10 @@ tmediatitle = ""
 ttype = ""
 function inittimer()
 	if 	errorproof("path") then
---		print("initialize")
---		vrate,arate,srate,brate = 0,0,0,0
+		--ch名をmedia-titleにする
 		if	string.find(mp.get_property("media-title"), string.rep("%x", 32)) then
 			tmediatitle = mp.get_property("options/title")
-			mp.set_property("options/media-title",tmediatitle)
+			mp.set_property("options/force-media-title",tmediatitle)
 		else	tmediatitle = mp.get_property("media-title")
 		end
 		--動画サイズ取得
@@ -256,7 +240,6 @@ function inittimer()
 		if	not ttype or showtype == 0 then ttype = ""
 		else	ttype = "["..ttype.."]"
 		end
-		mp.set_property("loop", "inf")
 	else print("notpecapath")
 	end
 end
@@ -312,14 +295,18 @@ function test()
 --	else	print("false")
 --	end
 --	print(mp.get_property("track-list/2/codec"))
-mp.set_property("options/autofit" , "50%")
 a = {mp.get_osd_resolution()}
-mp.set_property("options/no-window-dragging", "yes")
 print(mp.get_property("monitorpixelaspect"))
 print(mp.get_property("video-aspect"))
 print(mp.get_property("stream-capture",""))
-
+print(mp.get_property("options/osc"))
+b = "abcdefg\\higklmn\\"
+local i ={}
+for i in string.gmatch(b,"%\\+") do
+	print(i)
 end
+
+end                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 mp.add_key_binding("KP8", "test" , test)
 
 --URL取得と分割
@@ -333,14 +320,39 @@ function getpath()
     return fullpath,a[2],id[3]
 end
 
+function addplaylist()
+	if	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append")
+		end
+	end
+end
+
+function addbumpurl()
+	if	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+	end
+end		
+
+function bump()
+	if	errorproof("path") then
+		local streampath,localhost,streamid = getpath()
+		mp.commandv("playlist_clear")
+		addbumpurl()
+		mp.commandv("playlist_next")
+		mp.osd_message("bump",3)
+	end
+end
+
 --リレーそのままで開き直す
 function refresh()
 	if	errorproof("path") then
 		local streampath,localhost,streamid = getpath()
 		mp.commandv("stop")
 		mp.commandv("loadfile", streampath)
-		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append") end
-		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+		addplaylist()
+		addbumpurl()
 	end
 end
 mp.add_key_binding("KP7","refresh",refresh)
@@ -353,12 +365,11 @@ mp.add_periodic_timer(1, (function()
 		if 	not errorproof("firststart") then
 			mp.set_property("options/title", getstatus() )
 		else 			
-			if	errorproof("firststart") then
-				count = count + 1
-				if	count >= 15 then refresh()
-					count = 0
-				end
-			end				
+			count = count + 1
+			if	count >= 15 then mp.set_property("loop", "yes")
+				bump()
+				count = 0
+			end		
 		end
 	else	
 	end
