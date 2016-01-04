@@ -20,7 +20,8 @@ ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣�
 istatusbar = 1				--ステータスバー（の代わりのタイトルバー）
 icursorhide = 2				--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
 iontop = 0				--最前面表示
-iosc = 0				--オンスクリーンコントローラー
+iosc = 1				--オンスクリーンコントローラー(うまく動かない)
+iosd = 1				--osdの表示
 recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
 
 
@@ -41,11 +42,11 @@ kpanstereo = "Ctrl+Down"		--音声を普通のステレオに（ctrl押しなが
 kmute = "MOUSE_BTN1"			--ミュート（マウス中クリック）
 
 --プレイヤーの状態
-kminimize = "+"				--最小化のようなもの（+）
+kminimize = "PGUP"			--最小化のようなもの（pageup）
 kfullscreen = "Alt+Enter"		--フルスクリーン（alt押しながらenter）
 kfullscreen2 = "MOUSE_BTN0_DBL"		--フルスクリーン2つめ（左ダブルクリック）
 kstatusbar = "Enter"			--タイトルバー表示非表示（enter）
-kminmute = "-"				--最小化のようなものと同時にミュート（-）
+kminmute = "PGDWN"			--最小化のようなものと同時にミュート（pagedown）
 kexit = "Esc"				--終了（escape）
 kontop = "t"				--最前面表示（t）
 kosc = "Ins"				--oscオンオフ（insert）
@@ -92,10 +93,13 @@ elseif icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", 
 end
 mp.set_property("options/screenshot-format", sstype )
 mp.set_property("options/screenshot-jpeg-quality", jpgquality )
-mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%ty%tm%td_%tH%tM%tS_%n")
+mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
 if sssize == 0 then sssize = "window" 
 else sssize = "video"
 end
+if	iosc == 0 then mp.set_property_bool("options/osc", false) 
+end
+
 
 function errorproof(case)
 	if 	case == "path" then
@@ -119,39 +123,45 @@ function errorproof(case)
 	end
 end
 
-if	iosc == 0 then mp.set_property_bool("options/osc", false) 
-end
-
 --ファイル情報取得
 function initialize()
-	if errorproof("path") then
+--	if errorproof("path") then
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width", 0)
 		orgheight = mp.get_property("height", 0)
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
-		--はじめの設定を適用する
-		if	errorproof("firststart") then
-			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
-			else	mp.commandv("script_message", "disable-osc")
-				mp.add_timeout(0.05, (function()mp.commandv("script_message", "disable-osc")end))
-				mp.set_property("options/osc", "no")
-			end
-			if	istatusbar == 1 and mp.get_property("border") == "no" then
-				mp.add_timeout(0.05, (function()mp.commandv("cycle", "border")end))
-			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
-				mp.add_timeout(0.05, (function()mp.commandv("cycle", "border")end))
-			end
-			if	iontop == 1 and mp.get_property("ontop") == "no" then
-				mp.add_timeout(0.05, (function()mp.commandv("cycle", "ontop")end))
-			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
-				mp.add_timeout(0.05, (function()mp.commandv("cycle", "ontop")end))
-			end
-		end
-		mp.set_property("loop", "yes")
-	else print("notpecapath")
-	end
+
+
+	--else print("notpecapath")
+--	end
 end
 mp.register_event("file-loaded", initialize)
+
+function applysettings()
+		--はじめの設定を適用する
+		if	errorproof("firststart") and errorproof("path") then
+			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
+			else	mp.set_property("options/osc", "no")
+				mp.commandv("script_message", "disable-osc")
+				mp.add_timeout(1, (function()mp.commandv("script_message", "disable-osc")end))
+			end
+			if	istatusbar == 1 and mp.get_property("border") == "no" then
+				mp.add_timeout(1, (function()mp.commandv("cycle", "border")end))
+			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
+				mp.add_timeout(1, (function()mp.commandv("cycle", "border")end))
+			end
+			if	iontop == 1 and mp.get_property("ontop") == "no" then
+				mp.add_timeout(1, (function()mp.commandv("cycle", "ontop")end))
+			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
+				mp.add_timeout(1, (function()mp.commandv("cycle", "ontop")end))
+			end
+			if	iosd == 0 then
+				mp.set_property("options/osd-font-size","1")
+			end
+			mp.set_property("loop","yes")
+		end
+end
+mp.register_event("start-file",applysettings)
 
 function refresh()
 	if	errorproof("path") then
@@ -171,7 +181,7 @@ function record()
 			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
 			mp.osd_message("record_start",3)
 		else	mp.set_property("stream-capture" , "" )
-			mp.osd_message("record_end",3)
+			mp.osd_message("record_stop",3)
 		end
 	end
 end
@@ -353,7 +363,7 @@ function bump()
 		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
 		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append")
 		end
-		mp.commandv("playlist_next")
+		mp.commandv("playlist_next","force")
 		mp.osd_message("bump",3)
 	end
 end
