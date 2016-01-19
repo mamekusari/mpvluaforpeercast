@@ -190,9 +190,9 @@ mp.add_key_binding(krecord,"record" , record)
 
 --画面サイズ変更用
 function changewindowsize(newwidth , newheight , kurobuti)
-	mp.set_property("vf","scale=" .. math.floor(newwidth) ..":"..math.floor(newheight) )--..":".. kurobuti )..":1:1")
+	mp.set_property("vf","scale=" .. math.floor(newwidth) ..":"..math.floor(newheight) )
 	mp.set_property_number("window-scale" , 1)
-	mp.set_property("vf","dsize=".. orgwidth .. ":".. orgheight..":-2:1:")--..kurobuti)
+	mp.set_property("vf","dsize=".. orgwidth .. ":".. orgheight)
 end
 
 --URL取得と分割
