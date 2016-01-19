@@ -20,9 +20,9 @@ ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣�
 istatusbar = 1				--ステータスバー（の代わりのタイトルバー）
 icursorhide = 2				--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
 iontop = 0				--最前面表示
-iosc = 1				--オンスクリーンコントローラー(うまく動かない)
+iosc = 0				--オンスクリーンコントローラー(うまく動かない)
 iosd = 1				--osdの表示
-recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます
+recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます。「""」でmpvと同じフォルダになります
 
 
 --キーバインド				--（）内はデフォルト
@@ -123,19 +123,16 @@ function errorproof(case)
 	end
 end
 
+
 --ファイル情報取得
-function initialize()
---	if errorproof("path") then
+function getorgsize()
 		--動画サイズ取得
 		orgwidth  = mp.get_property("width", 0)
 		orgheight = mp.get_property("height", 0)
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
 
-
-	--else print("notpecapath")
---	end
 end
-mp.register_event("file-loaded", initialize)
+mp.register_event("file-loaded", getorgsize)
 
 function applysettings()
 		--はじめの設定を適用する
@@ -159,6 +156,9 @@ function applysettings()
 				mp.set_property("options/osd-font-size","1")
 			end
 			mp.set_property("loop","yes")
+			mp.set_property("options/force-window", "immediate")
+			mp.set_property("options/demuxer-readahead-secs", 20)
+--			mp.set_property("options/cache-sec", 2)
 		end
 end
 mp.register_event("start-file",applysettings)
@@ -190,9 +190,9 @@ mp.add_key_binding(krecord,"record" , record)
 
 --画面サイズ変更用
 function changewindowsize(newwidth , newheight , kurobuti)
-	mp.set_property("vf","dsize=" .. math.floor(newwidth) ..":".. math.floor(newheight) ..":".. kurobuti .."::0")
+	mp.set_property("vf","scale=" .. math.floor(newwidth) ..":"..math.floor(newheight) )--..":".. kurobuti )..":1:1")
 	mp.set_property_number("window-scale" , 1)
-	mp.set_property("vf","dsize=".. orgwidth .. ":" .. orgheight)
+	mp.set_property("vf","dsize=".. orgwidth .. ":".. orgheight..":-2:1:")--..kurobuti)
 end
 
 --URL取得と分割
@@ -286,7 +286,7 @@ function mute()
 		mp.commandv("cycle", "mute")
 		if 	mp.get_property_bool("mute") then
 			mp.osd_message("mute")
-		else	mp.osd_message("mute_off")
+		else	mp.osd_message("mute off")
 		end
 	end
 end
@@ -379,99 +379,103 @@ end
 mp.add_key_binding(kstop, "stop" , stop)
 
 --ここからwindowサイズ変更
+
+videosize = {
+	to160 = {160,120},
+	to320 = {320,240},
+	to480 = {480,360},
+	to640 = {640,480},
+	to800 = {800,600},
+	to1280 = {1280,960},
+	to1600 = {1600,1200},
+	to1920 = {1920,1440}
+}
+
 function to50per()
 	local targetsize = 0.5
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding(k50, "50%", to50per)
 
 function to75per()
 	local targetsize = 0.75
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding(k75, "75%", to75per)
 
 function to100per()
 	local targetsize = 1
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k100, "100%", to100per)
 
 function to150per()
 	local targetsize = 1.5
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k150, "150%", to150per)
 
 function to200per()
 	local targetsize = 2
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k200, "200%", to200per)
 
 function to250per()
 	local targetsize = 2.5
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k250, "250%", to250per)
 
 function to300per()
 	local targetsize = 3
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k300, "300%", to300per)
 
 function to25per()
 	local targetsize = 0.25
-	changewindowsize(orgwidth * targetsize , orgheight * targetsize , 2)
+	changewindowsize(orgwidth * targetsize , orgheight * targetsize)
 end
 mp.add_key_binding( k25, "25%", to25per)
 
 function to160x120()
-	local targetsize = {160 , 120}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to160[1] , videosize.to160[2])
 end
 mp.add_key_binding( k160x120, "160x120", to160x120)
 
 function to320x240()
-	local targetsize = {320 , 240}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to320[1] , videosize.to320[2])
 end
 mp.add_key_binding( k320x240, "320x240", to320x240)
 
 function to480x360()
-	local targetsize = {480 , 360}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to480[1] , videosize.to480[2])
 end
 mp.add_key_binding( k480x360, "480x360", to480x360)
 
 function to640x480()
-	local targetsize = {640 , 480}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to640[1] , videosize.to640[2])
 end
 mp.add_key_binding( k640x480, "640x480", to640x480)
 
 function to800x600()
-	local targetsize = {800 , 600}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to800[1] , videosize.to800[2])
 end
 mp.add_key_binding( k800x600, "800x600", to800x600)
 
 function to1280x960()
-	local targetsize = {1280 , 960}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to1280[1] , videosize.to1280[2])
 end
 mp.add_key_binding( k1280x960, "1280x960", to1280x960)
 
 function to1600x1200()
-	local targetsize = {1600 , 1200}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to1600[1] , videosize.to1600[2])
 end
 mp.add_key_binding( k1600x1200, "1600x1200", to1600x1200)
 
 function to1920x1440()
-	local targetsize = {1920 , 1440}
-	changewindowsize(targetsize[1] , targetsize[2] , -1)
+	changewindowsize(videosize.to1920[1] , videosize.to1920[2])
 end
 mp.add_key_binding( k1920x1440, "1920x1440", to1920x1440)
 
