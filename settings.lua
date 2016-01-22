@@ -14,7 +14,8 @@ shiftvolume = 1				--shift押しながらの時
 sstype = "jpg"				--「"png"」又は「"jpg"」
 jpgquality = 90				--jpgの時の画質。0-100
 sssize = 1				--ソースサイズ「1」か表示windowサイズ「0」か
-ssfolder = "d:\\a b\\"	 		--保存場所。フォルダの区切りは｢\\｣で最後の\\がないとファイル名に化けます。「""」でmpv.exeのフォルダになります
+ssfolder = ""	 			--保存場所。フォルダの区切りは｢\\｣。「""」でマイピクチャになります
+sssubfolder = 0				--「1」でチャンネル名でサブフォルダを作る。「0」でつくらない
 
 --その他				--保存フォルダ以外は0で無効になります
 istatusbar = 1				--ステータスバー（の代わりのタイトルバー）
@@ -22,7 +23,8 @@ icursorhide = 2				--マウスカーソルを自動的に隠す「1」。「2」
 iontop = 0				--最前面表示
 iosc = 0				--オンスクリーンコントローラー(うまく動かない)
 iosd = 1				--osdの表示
-recordfolder = "d:\\a b\\"		--録画フォルダ。よく壊れたファイルができます。「""」でmpvと同じフォルダになります
+recordfolder = ""			--録画フォルダ。フォルダの区切りは｢\\｣。よく壊れたファイルができます。「""」でビデオフォルダになります
+recordsubfolder = 0			--「1」でチャンネル名でサブフォルダを作る。「0」で作らない
 
 
 --キーバインド				--（）内はデフォルト
@@ -54,6 +56,7 @@ kosc = "Ins"				--oscオンオフ（insert）
 --リレー操作
 kstop = "Alt+x"				--リレー切断（alt押しながらx）
 kbump = "Alt+b"				--リレー再接続（alt押しながらb）
+kbump2 = "z"				--リレー再接続2つめ（z）
 
 --スクリーンショットとか
 kscreenshot = "p"			--スクリーンショットキー（p）
@@ -83,6 +86,11 @@ k25 = "8"
 
 
 --ここからスクリプトの処理コード
+--require("timer",package.seeall)
+--require ("timer")
+--test = timer
+--print(test())
+--print(timer.test())
 mp.set_property("options/softvol", "yes" )
 mp.set_property("options/softvol-max", maxvolume )
 mp.set_property("options/volume", ivolume )
@@ -91,13 +99,35 @@ mp.set_property("options/cursor-autohide-fs-only", "no" )
 if icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
 elseif icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
 end
+if	iosc == 0 then mp.set_property_bool("options/osc", false) 
+end
+
+function getsavfolder(name)
+	local userfolder,savfolder = os.getenv("USERPROFILE")
+	if 	string.find(userfolder," and ") then
+		savfolder = userfolder.."\\My "..name.."\\"
+	elseif	string.find(userfolder,"Users") then
+		savfolder = userfolder.."\\"..name.."\\"
+	else	savfolder = ""
+	end
+	return savfolder
+end
+
 mp.set_property("options/screenshot-format", sstype )
 mp.set_property("options/screenshot-jpeg-quality", jpgquality )
-mp.set_property("options/screenshot-template", ssfolder .."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
 if sssize == 0 then sssize = "window" 
 else sssize = "video"
 end
-if	iosc == 0 then mp.set_property_bool("options/osc", false) 
+if	ssfolder == "" then
+	ssfolder = getsavfolder("Pictures")
+elseif	string.sub(ssfolder,string.len(ssfolder)) ~= "\\" then
+	ssfolder = ssfolder.."\\"
+end
+mp.set_property("options/screenshot-template", ssfolder.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
+
+if	recordfolder == "" then recordfolder = getsavfolder("Videos")
+elseif	string.sub(recordfolder,string.len(recordfolder)) ~= "\\" then
+	recordfolder = recordfolder.."\\"	
 end
 
 
@@ -134,30 +164,35 @@ function getorgsize()
 end
 mp.register_event("file-loaded", getorgsize)
 
+function delay(command,setting,sec)
+	mp.add_timeout(sec,function()mp.commandv(command,setting)end)
+end
+
 function applysettings()
 		--はじめの設定を適用する
 		if	errorproof("firststart") and errorproof("path") then
 			if 	iosc == 1 then mp.commandv("script_message", "enable-osc")
 			else	mp.set_property("options/osc", "no")
-				mp.commandv("script_message", "disable-osc")
-				mp.add_timeout(1, (function()mp.commandv("script_message", "disable-osc")end))
+				delay("script_message","disable-osc",0.1)
+				delay("script_message","disable-osc",1)
 			end
 			if	istatusbar == 1 and mp.get_property("border") == "no" then
-				mp.add_timeout(1, (function()mp.commandv("cycle", "border")end))
+				delay("cycle","border",1)
 			elseif	istatusbar == 0 and mp.get_property("border") == "yes" then
-				mp.add_timeout(1, (function()mp.commandv("cycle", "border")end))
+				delay("cycle","border",1)
 			end
 			if	iontop == 1 and mp.get_property("ontop") == "no" then
-				mp.add_timeout(1, (function()mp.commandv("cycle", "ontop")end))
+				delay("cycle","ontop",1)				
 			elseif	iontop == 0 and mp.get_property("ontop") == "yes" then
-				mp.add_timeout(1, (function()mp.commandv("cycle", "ontop")end))
+				delay("cycle","ontop",1)
 			end
 			if	iosd == 0 then
 				mp.set_property("options/osd-font-size","1")
 			end
-			mp.set_property("loop","yes")
+			mp.set_property_bool("loop",true)
 			mp.set_property("options/force-window", "immediate")
-			mp.set_property("options/demuxer-readahead-secs", 20)
+			mp.set_property_number("options/demuxer-readahead-secs", 20)
+			mp.set_property_number("options/mc", 0)
 --			mp.set_property("options/cache-sec", 2)
 		end
 end
@@ -177,11 +212,17 @@ function record()
 	if	errorproof("path") and errorproof("playing") then
 		if	mp.get_property("stream-capture") == "" then
 			local date = os.date("%y%m%d_%H%M%S")
+			if	recordsubfolder == 1 then
+--				io.open(ssfolder.."%{media-title}\\","w")
+				recordfolder = recordfolder ..mp.get_property("media-title").."\\"
+				os.execute("mkdir ".."\""..recordfolder.."\"")
+				recordsubfolder = 0
+			end
 			refresh()
 			mp.set_property("stream-capture", recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
-			mp.osd_message("record_start",3)
+			mp.osd_message("record start",3)
 		else	mp.set_property("stream-capture" , "" )
-			mp.osd_message("record_stop",3)
+			mp.osd_message("record stop",3)
 		end
 	end
 end
@@ -211,7 +252,7 @@ function osc()
 	if 	iosc == 1 then
 		mp.commandv("script_message", "disable-osc")
 		--1回だとosc写っていない時にしてもosc表示されるだけなのでもう1回送る
-		mp.add_timeout(0.1, (function()mp.commandv("script_message", "disable-osc")end))
+		delay("script_sessage", "disable-osc",0.1)
 		iosc = 0
 	else	mp.commandv("script_message", "enable-osc")
 		iosc = 1
@@ -222,6 +263,13 @@ mp.add_forced_key_binding(kosc, "osc", osc)
 --スクリーンショット
 function screenshot()
 	if 	errorproof("playing") then
+		if	sssubfolder == 1 then
+--			io.open(ssfolder.."%{media-title}\\","w")
+			ssfolder = ssfolder ..mp.get_property("media-title").."\\"
+			os.execute("mkdir ".."\""..ssfolder.."\"")
+			mp.set_property("options/screenshot-template", ssfolder.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
+			sssubfolder = 0
+		end
 		mp.commandv("screenshot" , sssize )
 		mp.osd_message("screenshot")
 	end
@@ -357,7 +405,7 @@ mp.add_key_binding(kontop, "ontop", ontop)
 
 --リレー再接続
 function bump()
-	if	errorproof("path") then
+	if	errorproof("path") and bumpt == nil then
 		local streampath,localhost,streamid = getpath()
 		mp.commandv("playlist_clear")
 		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
@@ -365,9 +413,16 @@ function bump()
 		end
 		mp.commandv("playlist_next","force")
 		mp.osd_message("bump",3)
+		print("1")
+	elseif	bumpt then
+		bumpt()
+		loadlist = false
+		resetplaylist()
+		print("2")
 	end
 end
 mp.add_key_binding(kbump, "bump" , bump)
+mp.add_key_binding(kbump2, "bump2" , bump)
 
 --リレー切断
 function stop()
