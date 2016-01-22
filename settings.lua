@@ -189,7 +189,7 @@ function applysettings()
 			if	iosd == 0 then
 				mp.set_property("options/osd-font-size","1")
 			end
-			mp.set_property_bool("loop",true)
+			mp.set_property("loop","yes")
 			mp.set_property("options/force-window", "immediate")
 			mp.set_property_number("options/demuxer-readahead-secs", 20)
 			mp.set_property_number("options/mc", 0)
