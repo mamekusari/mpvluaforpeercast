@@ -515,15 +515,14 @@ function bumpcount()
 	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") then
 		count = count + 10
 		print("count+10 count:"..count)
-		if	math.mod(math.floor(count/10),2) == 0 then
-			mp.commandv("drop-buffers")
-			mp.commandv("playlist-next")
-			mp.commandv("playlist-prev")
-		end
 		if	count >= 100 then
-			mp.commandv("playlist-next", "force")
+			mp.commandv("playlist-next")
 			count = count - 50
 			print("skip count-50 count:"..count)
+		elseif	math.mod(math.floor(count/10),2) == 0 then
+--			mp.commandv("drop-buffers")
+			mp.commandv("playlist-next")
+			mp.commandv("playlist-prev")
 		end
 
 	else
