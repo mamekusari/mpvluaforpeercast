@@ -265,7 +265,7 @@ function osc()
 		s.iosc = 1
 	end
 end
-mp.add_forced_key_binding(s.iosc, "osc", osc)
+mp.add_forced_key_binding(s.kosc, "osc", osc)
 
 --スクリーンショット
 function screenshot()
