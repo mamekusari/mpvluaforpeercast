@@ -501,7 +501,7 @@ mp.add_periodic_timer(1, (function()
 			bumpcount()
 		else 			
 			count = count + 1
-			if	count >= 21 then mp.set_property("loop", yes)
+			if	count >= 21 then mp.set_property("loop", "yes")
 				bumpt()
 				count = 0
 			end		
