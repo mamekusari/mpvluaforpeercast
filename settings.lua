@@ -4,7 +4,7 @@ local s={
 
 
 --初期設定
---ボリューム関係			--下の方にあるキー割り当てを変えたらホイールとかcontrolとかはそのキーに変わります
+--ボリューム関係				--下の方にあるキー割り当てを変えたらホイールとかcontrolとかはそのキーに変わります
 ivolume = 50,				--初期ボリューム
 maxvolume = 130,			--ボリュームの最大値。130で大体100の2倍の音量になります
 volume = 5,				--マウスホイールの変更量
@@ -15,17 +15,17 @@ shiftvolume = 1,			--shift押しながらの時
 sstype = "jpg",				--「"png"」又は「"jpg"」
 jpgquality = 90,			--jpgの時の画質。0-100
 sssize = 1,				--ソースサイズ「1」か表示windowサイズ「0」か
-ssfolder = "",	 			--保存場所。フォルダの区切りは｢\\｣。「""」でマイピクチャになります
-sssubfolder = 0,			--「1」でチャンネル名でサブフォルダを作る。「0」でつくらない
+ssdir = "",	 			--保存場所。フォルダの区切りは｢\\｣。「""」でマイピクチャになります
+sssubdir = 0,				--「1」でチャンネル名でサブフォルダを作る。「0」でつくらない
 
---その他				--保存フォルダ以外は0で無効になります
+--その他					--保存フォルダ以外は0で無効になります
 istatusbar = 1,				--ステータスバー（の代わりのタイトルバー）
 icursorhide = 2,			--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
 iontop = 0,				--最前面表示
-iosc = 0,				--オンスクリーンコントローラー(うまく動かない)
+iosc = 1,				--オンスクリーンコントローラー。「2」で常に表示
 iosd = 1,				--osdの表示
-recordfolder = "",			--録画フォルダ。フォルダの区切りは｢\\｣。よく壊れたファイルができます。「""」でビデオフォルダになります
-recordsubfolder = 0,			--「1」でチャンネル名でサブフォルダを作る。「0」で作らない
+recdir = "",				--録画フォルダ。フォルダの区切りは｢\\｣。よく壊れたファイルができます。「""」でビデオフォルダになります
+recsubdir = 0,				--「1」でチャンネル名でサブフォルダを作る。「0」で作らない
 
 
 --キーバインド				--（）内はデフォルト
@@ -90,13 +90,8 @@ k25 = "8",
 
 
 --ここからスクリプトの処理コード
-saigo = true
 }
---require("timer",package.seeall)
---require ("timer")
---test = timer
---print(test())
---print(timer.test())
+
 mp.set_property("options/softvol", "yes" )
 mp.set_property("options/softvol-max", s.maxvolume )
 mp.set_property("options/volume", s.ivolume )
@@ -105,18 +100,16 @@ mp.set_property("options/cursor-autohide-fs-only", "no" )
 if s.icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
 elseif s.icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
 end
-if	s.iosc == 0 then mp.set_property_bool("options/osc", false) 
-end
 
-function getsavfolder(name)
-	local userfolder,savfolder = os.getenv("USERPROFILE")
-	if 	string.find(userfolder," and ") then
-		savfolder = userfolder.."\\My "..name.."\\"
-	elseif	string.find(userfolder,"Users") then
-		savfolder = userfolder.."\\"..name.."\\"
-	else	savfolder = ""
+function getsavdir(name)
+	local userdir,savdir = os.getenv("USERPROFILE")
+	if 	string.find(userdir," and ") then
+		savdir = userdir.."\\My "..name.."\\"
+	elseif	string.find(userdir,"Users") then
+		savdir = userdir.."\\"..name.."\\"
+	else	savdir = ""
 	end
-	return savfolder
+	return savdir
 end
 
 mp.set_property("options/screenshot-format", s.sstype )
@@ -124,16 +117,16 @@ mp.set_property("options/screenshot-jpeg-quality", s.jpgquality )
 if s.sssize == 0 then s.sssize = "window" 
 else s.sssize = "video"
 end
-if	s.ssfolder == "" then
-	s.ssfolder = getsavfolder("Pictures")
-elseif	string.sub(ssfolder,string.len(s.ssfolder)) ~= "\\" then
-	s.ssfolder = s.ssfolder.."\\"
+if	s.ssdir == "" then
+	s.ssdir = getsavdir("Pictures")
+elseif	string.sub(ssdir,string.len(s.ssdir)) ~= "\\" then
+	s.ssdir = s.ssdir.."\\"
 end
-mp.set_property("options/screenshot-template", s.ssfolder.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
+mp.set_property("options/screenshot-template", s.ssdir.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
 
-if	s.recordfolder == "" then s.recordfolder = getsavfolder("Videos")
-elseif	string.sub(s.recordfolder,string.len(s.recordfolder)) ~= "\\" then
-	s.recordfolder = s.recordfolder.."\\"	
+if	s.recdir == "" then s.recdir = getsavdir("Videos")
+elseif	string.sub(s.recdir,string.len(s.recdir)) ~= "\\" then
+	s.recdir = s.recdir.."\\"	
 end
 
 
@@ -171,36 +164,35 @@ function getorgsize()
 end
 mp.register_event("file-loaded", getorgsize)
 
-function delay(command,setting,sec)
-	mp.add_timeout(sec,function()mp.commandv(command,setting)end)
+function delay(sec,command1,command2,command3,...)
+	mp.add_timeout(sec,function()mp.commandv(command1,command2,command3)end)
 end
 
 function applysettings()
 		--はじめの設定を適用する
 		if	errorproof("firststart") and errorproof("path") then
-			if 	s.iosc == 1 then mp.commandv("script_message", "enable-osc")
-			else	mp.set_property("options/osc", "no")
-				delay("script_message","disable-osc",0.1)
-				delay("script_message","disable-osc",1)
+			if 	s.iosc == 1 then mp.commandv("script_message", "osc-visibility","auto")
+			elseif	s.iosc == 2 then mp.commandv("script_message","osc-visibility","always")
+			else	mp.commandv("script_message","osc-visibility","never")
 			end
 			if	s.istatusbar == 1 and mp.get_property("border") == "no" then
-				delay("cycle","border",1)
+				delay(0.1,"cycle","border")
 			elseif	s.istatusbar == 0 and mp.get_property("border") == "yes" then
-				delay("cycle","border",1)
+				delay(0.1,"cycle","border")
 			end
 			if	s.iontop == 1 and mp.get_property("ontop") == "no" then
-				delay("cycle","ontop",1)				
+				delay(0.1,"cycle","ontop")				
 			elseif	s.iontop == 0 and mp.get_property("ontop") == "yes" then
-				delay("cycle","ontop",1)
+				delay(0.1,"cycle","ontop")
 			end
 			if	s.iosd == 0 then
+				--mp.set_property("osd-level","0")
 				mp.set_property("options/osd-font-size","1")
+				print(mp.get_property("osd-level"))
 			end
 			mp.set_property("loop","yes")
 			mp.set_property("options/force-window", "immediate")
 			mp.set_property_number("options/demuxer-readahead-secs", 20)
-			mp.set_property_number("options/mc", 0)
---			mp.set_property("options/cache-sec", 2)
 		end
 end
 mp.register_event("start-file",applysettings)
@@ -219,14 +211,14 @@ function record()
 	if	errorproof("path") and errorproof("playing") then
 		if	mp.get_property("stream-capture") == "" then
 			local date = os.date("%y%m%d_%H%M%S")
-			if	s.recordsubfolder == 1 then
---				io.open(ssfolder.."%{media-title}\\","w")
-				s.recordfolder = s.recordfolder ..mp.get_property("media-title").."\\"
-				os.execute("mkdir ".."\""..s.recordfolder.."\"")
-				s.recordsubfolder = 0
+			if	s.recsubdir == 1 then
+--				io.open(ssdir.."%{media-title}\\","w")
+				s.recdir = s.recdir ..mp.get_property("media-title").."\\"
+				os.execute("mkdir ".."\""..s.recdir.."\"")
+				s.recsubdir = 0
 			end
 			refresh()
-			mp.set_property("stream-capture", s.recordfolder..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
+			mp.set_property("stream-capture", s.recdir..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
 			mp.osd_message("record start",3)
 		else	mp.set_property("stream-capture" , "" )
 			mp.osd_message("record stop",3)
@@ -256,26 +248,19 @@ end
 
 --osc切り替え
 function osc()
-	if 	s.iosc == 1 then
-		mp.commandv("script_message", "disable-osc")
-		--1回だとosc写っていない時にしてもosc表示されるだけなのでもう1回送る
-		delay("script_sessage", "disable-osc",0.1)
-		s.iosc = 0
-	else	mp.commandv("script_message", "enable-osc")
-		s.iosc = 1
-	end
+	mp.commandv("script_message", "osc-visibility","cycle")
 end
 mp.add_forced_key_binding(s.kosc, "osc", osc)
 
 --スクリーンショット
 function screenshot()
 	if 	errorproof("playing") then
-		if	s.sssubfolder == 1 then
---			io.open(s.ssfolder.."%{media-title}\\","w")
-			s.ssfolder = s.ssfolder ..mp.get_property("media-title").."\\"
-			os.execute("mkdir ".."\""..s.ssfolder.."\"")
-			mp.set_property("options/screenshot-template", s.ssfolder.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
-			s.sssubfolder = 0
+		if	s.sssubdir == 1 then
+--			io.open(s.ssdir.."%{media-title}\\","w")
+			s.ssdir = s.ssdir ..mp.get_property("media-title").."\\"
+			os.execute("mkdir ".."\""..s.ssdir.."\"")
+			mp.set_property("options/screenshot-template", s.ssdir.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
+			s.sssubdir = 0
 		end
 		mp.commandv("screenshot" , s.sssize )
 		mp.osd_message("screenshot")
@@ -353,7 +338,7 @@ function panleft()
 		mp.set_property("af", "pan=2:[ 1 , 0 ]")
 	else 	mp.set_property("af", "channels=2:[ 1-0 , 1-0 ]")
 	end
-	mp.osd_message("pan_left")
+	mp.osd_message("pan left")
 end
 mp.add_key_binding(s.kpanleft, "panleft", panleft)
 
@@ -363,7 +348,7 @@ function panright()
 		mp.set_property("af", "pan=2:[ 1 , 1 ]") 
 	end
 	mp.set_property("af", "channels=2:[ 0-1 , 0-1 ]")
-	mp.osd_message("pan_right")
+	mp.osd_message("pan right")
 end
 mp.add_key_binding(s.kpanright, "panright", panright)
 
@@ -405,7 +390,7 @@ function ontop()
 	mp.commandv("cycle", "ontop")
 	if	mp.get_property_bool("ontop")	then
 		mp.osd_message("ontop")
-	else 	mp.osd_message("ontop_off")
+	else 	mp.osd_message("ontop off")
 	end
 end
 mp.add_key_binding(s.kontop, "ontop", ontop)
