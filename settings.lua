@@ -171,9 +171,28 @@ end
 function applysettings()
 		--はじめの設定を適用する
 		if	errorproof("firststart") and errorproof("path") then
-			if 	s.iosc == 1 then mp.commandv("script_message", "osc-visibility","auto")
-			elseif	s.iosc == 2 then mp.commandv("script_message","osc-visibility","always")
-			else	mp.commandv("script_message","osc-visibility","never")
+			local osc = mp.get_property("options/osc")
+			if 	s.iosc == 1 then
+				if	osc == "no" then
+					mp.commandv("script_message","osc-visibility","cycle")
+					delay(0.1,"script_message","osc-visibility","cycle")
+				elseif	osc == "always" then
+					mp.commandv("script_message","osc-visibility","cycle")
+				end
+			elseif	s.iosc == 2 then 
+				if	osc == "yes" then
+				mp.commandv("script_message","osc-visibility","cycle")
+				elseif	osc == "no" then
+				mp.commandv("script_message","osc-visibility","cycle")
+				delay(0.1,"script_message","osc-visibility","cycle")
+				end
+			else	
+				if	osc == "yes" then
+				mp.commandv("script_message","osc-visibility","cycle")
+				delay(0.1,"script_message","osc-visibility","cycle")
+				elseif	osc == "always" then
+				mp.commandv("script_message","osc-visibility","cycle")
+				end
 			end
 			if	s.istatusbar == 1 and mp.get_property("border") == "no" then
 				delay(0.1,"cycle","border")
