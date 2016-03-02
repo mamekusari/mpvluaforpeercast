@@ -175,9 +175,9 @@ function applysettings()
 			if 	s.iosc == 1 then
 				if	osc == "no" then
 					mp.commandv("script_message","osc-visibility","cycle")
-					delay(0.1,"script_message","osc-visibility","cycle")
 				elseif	osc == "always" then
 					mp.commandv("script_message","osc-visibility","cycle")
+					delay(0.1,"script_message","osc-visibility","cycle")
 				end
 			elseif	s.iosc == 2 then 
 				if	osc == "yes" then
