@@ -10,7 +10,7 @@ showcache = 1,				--大体のバッファサイズを表示。「2」でdemux+ca
 showplaytime = 1,			--再生時間（たまに総配信時間）を表示
 showprotocol = 0,			--flvの時にhttpかrtmpかを表示
 enablertmp = 0,				--flvの時に、「1」は初めはrtmpで再生する。「2」ですべてrtmpで再生する
-enableautospeed = 1,			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
+enableautospeed = 2,			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
 
 
 --表示切り替え用キーバインド
@@ -20,17 +20,108 @@ kbitrate = 	"ctrl+3",
 kfps = 		"ctrl+4",
 kcache = 	"ctrl+5",
 kplaytime = 	"ctrl+6",
-kprotocol = 	"ctrl+0",
+kprotocol =	"ctrl+9",
+kautospeed = 	"ctrl+0",
 
 
 
 --ここからスクリプトの処理コード
---module("timer", package.seeall)
 }
+local videoinfo = {
+	fps = 0,
+	width = 0,
+	height = 0,
+	size = "0x0",
+	title = "",
+	type = ""
+}
+
+local currentinfo ={
+	fps = 0,
+	width = 0,
+	height = 0,
+	bitrate = 0,
+	title = "",
+	type = ""
+}
+local pecainfo = {
+	stream = "/stream/".. string.rep("%x", 32),
+	pls = "/pls/".. string.rep("%x", 32),
+	playlistcount = 4
+	
+}
+
+local mpvinfo = {
+	limitavsync = 0.5,
+	limitct = 2
+
+}
+
+local t = {
+	fps = 0,
+	width = 0,
+	height = 0,
+	size = "0x0",
+	title = "",
+	type = "",
+	vol = 0
+}
+
 local fps = 0
-local orgsize = "0x0"
-local tmediatitle = ""
+--local videoinfo.size = "0x0"
+t.mediatitle = ""
 local ttype = ""
+
+playlist = {
+	geturl = function(protocol)
+			local streampath,localhost,streamid = get.path()
+			if	not protocol then protocol = "http" 
+			end
+			return protocol .. "://" .. localhost .. "/stream/" .. streamid
+		end,
+	addurl = function(protocol,times)
+			if	errorproof("path") then
+				local streampath,localhost,streamid = get.path()
+				repeat mp.commandv("loadfile", playlist.geturl(protocol) , "append")
+				if	not times then times = 1
+				end
+					times = times - 1
+				until 	times == 0
+			end
+		end,
+	addplay = function(protocol)
+			mp.commandv("playlist-clear")
+			mp.commandv("loadfile", playlist.geturl(protocol) ,"append")
+			mp.commandv("playlist-next")
+		end,
+	set = function(protocol1,times,protocol2)
+			playlist.addplay(protocol1)
+			mp.commandv("playlist-clear")
+			if	protocol2 then
+				playlist.addurl(protocol2,times-1)
+			else
+				playlist.addurl(protocol1,times-1)
+			end
+			bump.addurl()
+		end
+		
+}		
+
+bump = {
+	geturl = function()
+			local streampath,localhost,streamid = get.path()
+			return "http://".. localhost .. "/admin?cmd=bump&id=".. streamid
+		end,
+	addurl = function()
+			mp.commandv("loadfile", bump.geturl(), "append")
+		end,
+	t = function()
+			mp.commandv("playlist-clear")
+			mp.commandv("loadfile", bump.geturl(), "append")
+			mp.commandv("playlist-next")
+			mp.osd_message("bump")
+		end
+}
 
 function errorproof(case)
 	if 	case == "path" then
@@ -55,31 +146,47 @@ function errorproof(case)
 end
 
 function avsync(name,value)
-	if	value ~= nil and math.abs(value) > 2 then
-		if	math.abs(value) > 100 then
+	if	value ~= nil and math.abs(value) > mpvinfo.limitavsync then
+--		if	math.abs(value) > 100 then
 			mp.commandv("drop_buffers")
 			print("avsync:"..value)
 --			bump()
 --			addplaylist()
 --			addbumpurl()
 			--mp.osd_message("wrong relay bump",3)
-		else	print("outofsync: "..value)
-			mp.commandv("drop_buffers")
-		end
+--		else	print("outofsync: "..value)
+--			mp.commandv("drop_buffers")
+--		end
+--		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
+--		mp.commandv("seek","1")
 	end
 end
 mp.observe_property("avsync", "number", avsync)
 
 function ct(name,value)
-	if	value ~= nil and math.abs(value) > 2 then
+	if	value ~= nil and math.abs(value) > mpvinfo.limitct then
 --		mp.commandv("playlist_next")
+--		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
 		mp.commandv("drop_buffers")
 		print("outofct: "..value)
 	end
 end
 mp.observe_property("total-avsync-change", "number", ct)
 
-function getstreampos()
+get = {
+--URL取得と分割
+path = function()
+    local fullpath = mp.get_property("path")
+    local id = {string.find(fullpath,"/stream/(%x*)")}
+    local a = {}
+    for i in string.gmatch(fullpath, "[^/]+") do
+      table.insert(a, i)
+    end
+    return fullpath,a[2],id[3]
+end,
+
+--mp.get_property("stream-pos")は不安定らしいからこれは使えない
+streampos = function ()
 	local streampos
 	print("1")
 	streampos = mp.get_property("stream-pos", 0)
@@ -88,10 +195,10 @@ function getstreampos()
 		print("get_streampos_fail")
 	end
 	return streampos
-end
-mp.add_key_binding("*", "test3",getstreampos)
+end,
+
 --ビットレート取得
-function getbitrate()
+bitrate = function()
 	--キーフレーム間のビットレートを計測する方法
 	local pvrate = mp.get_property("packet-video-bitrate", 0)
 	local parate = mp.get_property("packet-audio-bitrate", 0)
@@ -104,8 +211,7 @@ function getbitrate()
 		brate = vrate + arate
 	end
 	--ストリームのデータ量からビットレートを計算する方法
-	--こっちの方法にするとmp.get_proprety("stream-pos")のところで他のスクリプトも巻き込んで反応がなくなることがあります。
---	local streampos = getstreampos()
+--	local streampos = get.streampos()
 --		if 	srate == nil or srate == 0 then 
 --			srate = streampos
 --			brate = srate /1024 * 8
@@ -115,138 +221,196 @@ function getbitrate()
 --			srate = streampos
 --		end
 	return brate
-end
+end,
 
 --キャッシュ取得
-function getcache()
+cache = function()
 	local cache,demux,sec
 	cache = mp.get_property_number("cache-used", 0)
 	demux = mp.get_property_number("demuxer-cache-duration", 0)
 	if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
-		sec = cache/(getbitrate() /8 ) + demux
+		sec = cache/(get.bitrate() /8 ) + demux
 	else	sec = 0
 	end
 	return cache,demux,sec
-end
+end,
 
 --解像度取得
-function getresolution(tateyoko)
+resolution = function(tateyoko)
 	if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
-		elseif tateyoko == "tateyoko" then 
-			tateyoko = string.format("%d",getresolution("yoko")).."x"..string.format("%d",getresolution("tate"))
-		else	tateyoko = mp.get_property("osd-width", 0)
+	elseif tateyoko == "tateyoko" then 
+		tateyoko = string.format("%d",get.resolution("yoko")).."x"..string.format("%d",get.resolution("tate"))
+--		elseif	type(tateyoko) == "string" then
+--			tateyoko = string.format("%d", videoinfo.width).."x"..string.format("%d", videoinfo.height)
+	else	tateyoko = mp.get_property("osd-width", 0)
 	end
 	return tateyoko
-end
+end,
+
 
 --ステータス集めて渡す
-function getstatus()
-	local currentsize,cache,demux,sec,size,rate
-	local t = {}
+--status = function()
+--	tset("display")
+--		elseif	case == "display" 
+--		t.barlist = t.rec..t.protocol..t.type .. t.mediatitle..t.speed .. t.info .. t.cache .. " ".. t.time .. t.vol
+--		return t.barlist
+--end
+
+}
+
+tset = function(case)
 	--録画チェック
-	t.rec = mp.get_property("stream-capture","")
-	if 	t.rec ~= "" then t.rec = "rec"
-	end
-
-	--ビデオコーデック取得
-	if	m.showtype == 1 then
-		if 	mp.get_property("track-list/0/type") == "video" then
-			t.type = mp.get_property("track-list/0/codec")
-		else	t.type = mp.get_property("track-list/1/codec")
+	if	case == "rec"	then
+		t.rec = mp.get_property("stream-capture","")
+		if 	t.rec ~= "" then t.rec = "rec"
 		end
-	elseif	m.showtype == 2 then t.type = mp.get_property("file-format")
-	end
-	if	not t.type or m.showtype == 0 then t.type = ""
-	else	t.type = "["..t.type.."]"
-	end
-
-	
-	if	m.showsize == 0 then size = ""
-	else
-		if	m.showsize == 3 then
-			size = orgsize
-		elseif m.showsize == 2 then size = getresolution("tateyoko")
-		else	if 	getresolution("tateyoko") ~= orgsize then 
-				size = orgsize.."->"..getresolution("tateyoko")
-			else	size = orgsize
+	--ビデオコーデック取得
+	elseif	case == "codec"	then
+		if	m.showtype == 1 then
+			if 	mp.get_property("track-list/0/type") == "video" then
+				t.type = mp.get_property("track-list/0/codec")
+			else	t.type = mp.get_property("track-list/1/codec")
+			end
+		elseif	m.showtype == 2 then t.type = mp.get_property("file-format")
+		end
+		if	not t.type or m.showtype == 0 then t.type = ""
+		else	t.type = "["..t.type.."]"
+		end
+--		return	t.type
+	--解像度
+	elseif	case == "size"	then
+		local size
+		if	m.showsize == 0 then size = ""
+		else
+			if	m.showsize == 3 then
+				size = videoinfo.size
+			elseif m.showsize == 2 then size = get.resolution("tateyoko")
+			else	if 	get.resolution("tateyoko") ~= videoinfo.size then 
+					size = videoinfo.size.."->"..get.resolution("tateyoko")
+				else	size = videoinfo.size
+				end
 			end
 		end
-	end
-	
-	if	m.showbitrate == 0 then	rate = ""
-	else	rate = string.format("%4dk", getbitrate())
-	end
-	if	m.showfps == 3 then t.fps = fps
-	elseif	m.showfps == 0 then t.fps = ""
-	elseif	m.showfps == 1 then t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0)).."/"..fps
-	else	t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0))
-	end
-	
+		return	size
+	--ビットレート
+	elseif	case == "bitrate"	then
+		local rate
+		if	m.showbitrate == 0 then	rate = ""
+		else	rate = string.format("%4dk", get.bitrate())
+		end
+		return	rate
+	--fps
+	elseif	case == "fps"	then
+		if	m.showfps == 3 then t.fps = videoinfo.fps
+		elseif	m.showfps == 0 then t.fps = ""
+		elseif	m.showfps == 1 then t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0)).."/"..videoinfo.fps
+		else	t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0))
+		end
+--		return	t.fps
+	elseif	case == "sort"	then
 	--うまく並べる方法がわからないから全通りごり押し
-	if	string.len(size..rate..t.fps) == 0 then t.info = " "
-	else
-		if	size ~= "" then				
-			if	rate ~= "" then				
-				if	t.fps ~= "" then			
-					t.info = " ("..size.." "..rate.." "..t.fps..") "	--1.1.1
-				else	t.info = " ("..size.." "..rate..") "			--1.1.0
+		local rate = tset("bitrate")
+		local size = tset("size")
+		tset("fps")
+		if	string.len(size..rate..t.fps) == 0 then t.info = " "
+		else
+			if	size ~= "" then				
+				if	rate ~= "" then				
+					if	t.fps ~= "" then			
+						t.info = " ("..size.." "..rate.." "..t.fps..") "	--1.1.1
+					else	t.info = " ("..size.." "..rate..") "			--1.1.0
+					end
+				else	if	t.fps ~= "" then
+						t.info = " ("..size.." "..t.fps..") "			--1.0.1
+					else	t.info = " ("..size..") "				--1.0.0	
+					end
+				end
+			elseif	rate ~= "" then						
+				if	t.fps ~= "" then
+					t.info = " ("..rate.." "..t.fps..") "				--0.1.1
+				else	t.info = " ("..rate..") "					--0.1.0
 				end
 			else	if	t.fps ~= "" then
-					t.info = " ("..size.." "..t.fps..") "			--1.0.1
-				else	t.info = " ("..size..") "				--1.0.0	
+					t.info = " ("..t.fps..") "					--0.0.1
 				end
 			end
-		elseif	rate ~= "" then						
-			if	t.fps ~= "" then
-				t.info = " ("..rate.." "..t.fps..") "				--0.1.1
-			else	t.info = " ("..rate..") "					--0.1.0
-			end
-		else	if	t.fps ~= "" then
-				t.info = " ("..t.fps..") "					--0.0.1
-			end
+		end	
+--		return	t.info
+	--再生時間
+	elseif	case == "playtime"	then
+		if	m.showplaytime ~= 1 then t.time = ""
+		else	t.time = mp.get_property_osd("playback-time", 0)
 		end
-	end	
-	
-	if	m.showplaytime ~= 1 then t.time = ""
-	else	t.time = mp.get_property_osd("playback-time", 0)
-	end
-	if	mp.get_property_bool("core-idle") then
-		t.time = "buffering"
-	end
-	--search判定できるかと思ったけどこれじゃできない
-	if	mp.get_property_bool("idle") then
-		t.time = "search"
-	end
-	
-	cache,demux,sec = getcache()	
-	if	m.enableautospeed ~= 0 then autospeed(sec)
-	end
-	
-	if	sec ~= sec or getbitrate() == 0 then sec = "-"
-	else	sec = string.format("%3.1fs",sec)
-	end
-	if	m.showcache == 0 then t.cache = ""
-	elseif	m.showcache == 1 then t.cache = sec
-	elseif	m.showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demux,cache)
-	end
-
-	if	mp.get_property_bool("mute") then t.vol = " vol:-" 
-	else	t.vol =  string.format(" vol:%d", mp.get_property("volume", 0))
-	end
-	
-	if m.showprotocol == 1 then
-		if string.find(getpath(),"rtmp://") and mp.get_property("file-format","") == "flv" then
-			t.protocol = "rtmp"
-		elseif mp.get_property("file-format","") == "flv" then	t.protocol = "http"
-		else t.protocol = ""
+		if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") then
+			t.time = "buffering"
+		elseif	mp.get_property_bool("pause") then
+			t.time = "pause"
 		end
-	else	t.protocol = ""
-	end
-
-	
+		--search判定できるかと思ったけどこれじゃできない
+		if	mp.get_property_bool("idle") then
+			t.time = "search"
+		end
+--		return	t.time
+	--キャッシュ
+	elseif	case == "cache"	then
+		local cache,demux,sec = get.cache()
+		if	sec ~= sec or get.bitrate() == 0 then sec = "-"
+		else	sec = string.format("%3.1fs",sec)
+		end
+		if	m.showcache == 0 then t.cache = ""
+		elseif	m.showcache == 1 then t.cache = sec
+		elseif	m.showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demux,cache)
+		end
+--		return	t.cache
+	--音量
+	elseif	case == "volume"	then
+		if	mp.get_property_bool("mute") then t.vol = " vol:-" 
+		else	t.vol =  string.format(" vol:%d", mp.get_property("volume", 0))
+		end
+--		return	t.vol
+	--プロトコル
+	elseif	case == "protocol"	then
+		if m.showprotocol == 1 then
+			if string.find(get.path(),"rtmp://") and mp.get_property("file-format","") == "flv" then
+				t.protocol = "rtmp"
+			elseif mp.get_property("file-format","") == "flv" then	t.protocol = "http"
+			else t.protocol = ""
+			end
+		else	t.protocol = ""
+		end
+--		return	t.protocol
+	--再生速度
+	elseif	case == "speed"	then
+		if	mp.get_property_number("speed",0) ~= 1 then
+			t.speed = string.format(" x%3.2f",mp.get_property_number("speed"))
+			else
+			t.speed = ""
+		end
+--		return	t.speed
 	--まとめてタイトルバーに表示
-	t.barlist = t.rec..t.protocol..t.type .. tmediatitle .. t.info .. t.cache .. " ".. t.time .. t.vol
-	return t.barlist
+	elseif	case == "display" then
+		tset("rec")
+		tset("protocol")
+		tset("codec")
+		tset("speed")
+		tset("sort")
+		tset("cache")
+		tset("playtime")
+		tset("volume")
+		t.barlist = (
+			t.rec..
+			t.protocol..
+			t.type ..
+			t.mediatitle..
+			t.speed ..
+			t.info ..
+			t.cache ..
+			" "..
+			t.time ..
+			t.vol
+			)
+		return t.barlist
+	end
 end
 
 local loadlist = false
@@ -257,56 +421,35 @@ function setplaylist()
 			mp.commandv("playlist_clear")		
 			if	m.enablertmp == 1	then
 				mp.add_timeout(0.1, function()
-					addplaylist("rtmp",1)
-					mp.commandv("playlist_next","force")
-					mp.commandv("playlist_clear")
-					addplaylist("http",3)
-					addbumpurl()
+					playlist.set("rtmp",pecainfo.playlistcount,"http")
 				end)
 				loadlist = true
 			elseif	m.enablertmp == 2	then
 				mp.add_timeout(0.1, function()
-					addplaylist("rtmp",1)
-					mp.commandv("playlist_next","force")
-					mp.commandv("playlist_clear")
-					addplaylist("rtmp",3)
-					addbumpurl()
+					playlist.set("rtmp",pecainfo.playlistcount)
 				end)
 				loadlist = true
 			else
 				mp.add_timeout(0.1, function()
-					addplaylist("http",1)
-					mp.commandv("playlist_next","force")
-					mp.commandv("playlist_clear")
-					addplaylist("http",3)
-					addbumpurl()
+					playlist.set("http",pecainfo.playlistcount)
 				end)
 				loadlist = true			
 			end
 			
 		elseif mp.get_property("file-format","") == "asf" then
 			mp.add_timeout(0.1, (function()
-				addplaylist("mms",1)
-				mp.commandv("playlist_next","force")
-				mp.commandv("playlist_clear")
-				addplaylist("mms",3)
-				addbumpurl()
+				playlist.set("mmsh",pecainfo.playlistcount)
 			end))
 			loadlist = true
 		else
 
 			mp.add_timeout(0.1, (function()
-
-				addplaylist("http",1)
-				mp.commandv("playlist_next","force")
-				mp.commandv("playlist_clear")
-				addplaylist("http",3)
-				addbumpurl()
+				playlist.set("http",pecainfo.playlistcount)
 			end))
 			loadlist = true
 				
 		end
-	elseif errorproof("path") and mp.get_property_number("playlist-count") >= 6 then
+	elseif errorproof("path") and mp.get_property_number("playlist-count") > pecainfo.playlistcount + 1 then
 		resetplaylist()
 	end
 end
@@ -321,80 +464,83 @@ mp.register_event("file-loaded", setplaylist)
 
 
 function manualrtmp()
-	mp.add_timeout(0.5, (function()
-		mp.commandv("playlist_clear")
-		addplaylist("rtmp",1)
-		mp.commandv("playlist_next","force")
-		mp.commandv("playlist_clear")
-		addplaylist("http",3)
-		addbumpurl()
-	end))
+	loadlist = false
+--	mp.add_timeout(0.1, function()
+		playlist.set("rtmp",pecainfo.playlistcount,"http")
+--	end)
 	loadlist = true
 end
 mp.add_key_binding("KP9", "manualrtmp" , manualrtmp)
 
+getorginfo = {
+	title = function()
+		if	errorproof("path") then
+			if	string.find(mp.get_property("media-title",""), string.rep("%x", 32)) then
+				t.mediatitle = mp.get_property("options/title")
+				mp.set_property("options/force-media-title",t.mediatitle)
+			else	t.mediatitle = mp.get_property("media-title","")
+			end
+		else	t.mediatitle = mp.get_property("media-title","")
+		end
+	end,
+	
+	resolution = function()
+		videoinfo.width  = mp.get_property("width", 0)
+		videoinfo.height = mp.get_property("height", 0)
+		videoinfo.size = string.format("%d",videoinfo.width).."x"..string.format("%d",videoinfo.height)
+	end,
+	
+	fps = function()
+		if 	mp.get_property_number("fps",0) == 1000 then videoinfo.fps = "vfr"
+		else	videoinfo.fps = string.format("%3.1f", mp.get_property_number("fps",0))
+		end
+	end,
 
---ファイル情報取得
-function getinfo()
-	if 	errorproof("path") then
-		--ch名をmedia-titleにする
-		if	string.find(mp.get_property("media-title"), string.rep("%x", 32)) then
-			tmediatitle = mp.get_property("options/title")
-			mp.set_property("options/force-media-title",tmediatitle)
-		else	tmediatitle = mp.get_property("media-title")
-		end
-		--動画サイズ取得
-		orgwidth  = mp.get_property("width", 0)
-		orgheight = mp.get_property("height", 0)
-		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
-		--fps取得
-		fps = mp.get_property_number("fps", 0)
-		if 	fps == 1000 then fps = "vfr"
-			--mp.add_timeout(1, (function()
-			--	fps = mp.get_property("fps",0)
-			--	fps = string.format("%3.1f", fps)
-			--	end))
-		else	fps = string.format("%3.1f", fps)
-		end
---		--ビデオコーデック取得
---		if	showtype == 1 then
---			if 	mp.get_property("track-list/0/type") == "video" then
---				ttype = mp.get_property("track-list/0/codec")
---			else	ttype = mp.get_property("track-list/1/codec")
---			end
---		elseif	showtype == 2 then ttype = mp.get_property("file-format")
---		end
---		if	not ttype or showtype == 0 then ttype = ""
---		else	ttype = "["..ttype.."]"
---		end
-	else print("notpecapath")
+	start = function()
+		getorginfo.title()
+		getorginfo.resolution()
+		getorginfo.fps()
 	end
-end
-mp.register_event("file-loaded", getinfo)
+}
+
+mp.register_event("file-loaded", getorginfo.start)
 
 
 --キャッシュ量を再生スピードで調整
-function autospeed(demuxbuffer)
-	if errorproof("playing") and brate ~= nil  and mp.get_property_number("packet-video-bitrate", 0) > 1 then
-	
-		local high = 10			--10秒キャッシュが貯まったら早送り開始
-		local low = 1.2			--demuxされた分が1.2秒以下になったら遅くする
+function autospeed()
+	if errorproof("playing")
+	and brate ~= nil  
+	and mp.get_property_number("packet-video-bitrate", 0) > 1
+	and m.enableautospeed ~= 0
+	then
+	local a,b,buffer = get.cache()
+		local high = 10   			--10秒バッファが貯まったら早送り開始
+		local low = 1.2   			--1.2秒以下になったら遅くする
 		local normal1 = 2			--遅くして2秒分たまったら普通の速度に戻す
-		local normal2 = 3			--早くして3秒分になったら普通の速度に戻す	
-		local lowspeed = 0.95			--遅くしたときの再生速度
-		local highspeed = 1.01 		--速くしたときの再生速度
+		local normal2 = 3			--早くして3秒分になったら普通の速度に戻す
+		local lowspeed = 0.95	 		--遅くしたときの再生速度
+		local highspeed = 1.10   		--速くしたときの再生速度
+		local persec = 0.01			--バッファの秒数にこれをかけた分を足す
+		local maxspeed = 2			--速度の上限
 		
+		local curspd
 		if	m.enableautospeed == 2 then lowspeed = 1
 		end
-		if 	demuxbuffer > normal1 and demuxbuffer < normal2 then
+		if	highspeed+persec*buffer < maxspeed then
+			curspd = highspeed+persec*buffer
+			else
+			curspd = maxspeed
+		end
+		
+		if 	buffer > normal1 and buffer < normal2 then
 			mp.set_property("speed", 1.00)
-		elseif	demuxbuffer < low then
+		elseif	buffer < low then
 			mp.set_property("speed", lowspeed)
-		elseif demuxbuffer > high then
-			mp.set_property("speed", highspeed)
-		elseif mp.get_property_number("speed") <= lowspeed and demuxbuffer > normal1 then
+		elseif buffer > high then
+			mp.set_property("speed", curspd)
+		elseif mp.get_property_number("speed") <= lowspeed and buffer > normal1 then
 			mp.set_property("speed", 1.00)
-		elseif mp.get_property_number("speed") >= highspeed and demuxbuffer < normal2 then
+		elseif mp.get_property_number("speed") >= highspeed and buffer < normal2 then
 			mp.set_property("speed", 1.00)
 		end
 	else	mp.set_property("speed", 1.00)
@@ -410,8 +556,8 @@ function test()
 --	print(mp.get_property("speed"))
 --	print(mp.get_property("playback-time"))
 	print(mp.get_property("time-start"))
+--	mp.commandv("seek","1")
 --	print(mp.get_property("window-minimized"))
-	print(os.getenv("USERPROFILE").."\\pictures\\")
 --	print(os.execute("intWindowStyle"))
 --	if mp.get_property_number("packet-video-bitrate") then print("true")
 --	else	print("false")
@@ -421,64 +567,31 @@ function test()
 --print(mp.get_property("monitorpixelaspect"))
 --print(mp.get_property("video-aspect"))
 --print(mp.get_property("options/osc"))
---print(mp.get_property("playlist"))
+print(mp.get_property("playlist"))
 --print(loadlist)
 --mp.set_property("vf","scale=".. 800 .. ":" .. -3)-- ..":1:1")
 --mp.set_property_number("window-scale" , 1)
 --mp.set_property("vf","clr")
+--mp.commandv("playlist_pos", mp.get_property("playlist_pos"))
+--mp.set_property_number("playlist-pos",mp.get_property_number("playlist-pos",0))
+--print(mp.get_property_number("playlist-pos"))
 --print(mp.get_property_number("video-bitrate"))
-local f = io.open("test.txt", "r")
-local a=io.open("testwrite.txt","w+")
-for line in f:lines() do
-	
-	a:write(line)
-end
+--mp.osd_message(mp.get_property("path"),5)
+mp.osd_message(mp.get_property("path"),5)
+--local f = io.open("test.txt", "r")
+--local a=io.open("testwrite.txt","w+")
+--for line in f:lines() do
+--	
+--	a:write(line)
+--end
 
 
-f:close()
+--f:close()
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 end
 mp.add_key_binding("KP8", "test" , test)
 
-
-
---URL取得と分割
-function getpath()
-    local fullpath = mp.get_property("path")
-    local id = {string.find(fullpath,"/stream/(%x*)")}
-    local a = {}
-    for i in string.gmatch(fullpath, "[^/]+") do
-      table.insert(a, i)
-    end
-    return fullpath,a[2],id[3]
-end
-
-function addplaylist(protocol,times)
-	if	errorproof("path") then
-		local streampath,localhost,streamid = getpath()
-		repeat mp.commandv("loadfile", protocol .. "://" .. localhost .. "/stream/" .. streamid , "append")
-			times = times - 1
-		until 	times == 0
-	end
-end
-
-function addbumpurl()
-	if	errorproof("path") then
-		local streampath,localhost,streamid = getpath()
-		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
-	end
-end		
-
-function bumpt()
-	if	errorproof("path") then
-		local streampath,localhost,streamid = getpath()
-		mp.commandv("playlist_clear")
-		addbumpurl()
-		mp.commandv("playlist_next","force")
-		mp.osd_message("bump",3)
-	end
-end
 
 --リレーそのままで開き直す
 function refresh()
@@ -495,68 +608,97 @@ mp.add_key_binding("KP7","refresh",refresh)
 local count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
-	if	errorproof("path") then
-		if 	not errorproof("firststart") then
-			mp.set_property("options/title", getstatus() )
+--	if	errorproof("path") then
+		if 	not errorproof("firststart") or not errorproof("path") then
+			autospeed()
+			mp.set_property("options/title", tset("display") )
 			bumpcount()
 		else 			
 			count = count + 1
-			if	count >= 21 then mp.set_property("loop", "yes")
-				bumpt()
+			if	errorproof("path") and count >= 21 then
+				mp.set_property("loop", "yes")
+				bump.t()
+--				playlist.addurl()
+				resetplaylist()
 				count = 0
 			end		
 		end
 --	else	
-	end
+--	end
 end))
 
 --早めに再開できるようにと、再生と停止を繰り返すときの処理
 function bumpcount()
-	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") then
-		count = count + 10
-		print("count+10 count:"..count)
-		if	count >= 100 then
-			mp.commandv("playlist-next")
-			count = count - 50
-			print("skip count-50 count:"..count)
-		elseif	math.mod(math.floor(count/10),2) == 0 then
---			mp.commandv("drop-buffers")
-			mp.commandv("playlist-next")
-			mp.commandv("playlist-prev")
-		end
+	local pos = mp.get_property_number("playlist-pos",0)
+	local inccount = 10					--止まった時に1秒ごとに増える数
+	local offsetsec = 50					--何秒で1秒分のバッファを相殺するか
+	local recsec = 4					--数値の秒ごとにプレイヤーを開き直す
+	local incpossec = 10					--数値の秒分以上になるとプレイリストを1つ送る
+	local decpossec = -5					--プレイリストを送った後にこの秒数分カウントを減らす
+	
+	local reccount = recsec * inccount
+	local incposcount = incpossec * inccount
+	local decposcount = -1 * math.abs(decpossec) * inccount
+	local deccount = -1 * inccount / offsetsec
+	
+	count = (math.modf(count*1000))/1000
 
+	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") then
+
+		count = count + inccount
+--		print("count+"..inccount.." count:"..count)
+		--if	count >= 200 then
+		--	bump.t()
+		--	resetplaylist()
+		--	count = count - 200
+		if	math.fmod(math.floor(count/10),math.floor(incposcount/10)) == 0 then --count >= 100 then
+			mp.commandv("playlist-next")
+			count = count + decposcount
+			print("current pos:".. pos + 1 .."  count"..decposcount.." count:"..count)
+		elseif	math.fmod(math.floor(count/10),math.floor(reccount/10)) == 0 then
+			mp.set_property_number("playlist-pos",pos)
+			print "reconnect"
+		end
+		
 	else
 		if	count > 0 then
-			count = count - 1
---			print("count-1 count:"..count)
+			count = count + deccount
+--			print("count"..deccount.." count:"..count)
+		else	count = 0
 		end
 	end
+--print("end:"..count)
 end
 
-local maxstatus = {
+local maxvalue = {
 	type = 2,
 	size = 3,
 	bitrate = 1,
 	fps = 3,
 	cache = 2,
 	playtime = 1,
+	autospeed = 2,
 	protocol = 1
 }
-
-local cyclestatus = {
-	type = function() m.showtype = m.showtype + 1; if m.showtype > maxstatus.type then m.showtype = 0 end;end,
-	size = function() m.showsize = m.showsize + 1; if m.showsize > maxstatus.size then m.showsize = 0 end;end,
-	bitrate = function() m.showbitrate = m.showbitrate + 1; if m.showbitrate > maxstatus.bitrate then m.showbitrate = 0 end;end,
-	fps = function() m.showfps = m.showfps + 1; if m.showfps > maxstatus.fps then m.showfps = 0 end;end,
-	cache = function() m.showcache = m.showcache + 1; if m.showcache > maxstatus.cache then m.showcache = 0 end;end,
-	playtime = function() m.showplaytime = m.showplaytime + 1; if m.showplaytime > maxstatus.playtime then m.showplaytime = 0 end;end,
-	protocol = function() m.showprotocol = m.showprotocol + 1; if m.showprotocol > maxstatus.protocol then m.showprotocol = 0 end;end
+function sv(value)
+	mp.osd_message(string.format("%1d",value))
+end
+local cyclevalue = {
+	type = function() m.showtype = m.showtype + 1; if m.showtype > maxvalue.type then m.showtype = 0 ;sv(m.showtype)end;end,
+	size = function() m.showsize = m.showsize + 1; if m.showsize > maxvalue.size then m.showsize = 0 end;end,
+	bitrate = function() m.showbitrate = m.showbitrate + 1; if m.showbitrate > maxvalue.bitrate then m.showbitrate = 0 end;end,
+	fps = function() m.showfps = m.showfps + 1; if m.showfps > maxvalue.fps then m.showfps = 0 end;end,
+	cache = function() m.showcache = m.showcache + 1; if m.showcache > maxvalue.cache then m.showcache = 0 end;end,
+	playtime = function() m.showplaytime = m.showplaytime + 1; if m.showplaytime > maxvalue.playtime then m.showplaytime = 0 end;end,
+	autospeed = function() m.autospeed = m.autospeed + 1; if m.autospeed > maxvalue.autospeed then m.autospeed = 0 ;sv(m.autospeed)end;end,
+	protocol = function() m.showprotocol = m.showprotocol + 1; if m.showprotocol > maxvalue.protocol then m.showprotocol = 0 end;end
 }
 
-mp.add_key_binding( m.ktype,"cycleshowtype",cyclestatus.type)
-mp.add_key_binding( m.ksize,"cycleshowsize",cyclestatus.size )
-mp.add_key_binding( m.kbitrate,"cycleshowbitrate",cyclestatus.bitrate)
-mp.add_key_binding( m.kfps,"cycleshowfps",cyclestatus.fps)
-mp.add_key_binding( m.kcache,"cycleshowcache",cyclestatus.cache)
-mp.add_key_binding( m.kplaytime,"cycleshowplaytime",cyclestatus.playtime)
-mp.add_key_binding( m.kprotocol,"cycleshowprotocol",cyclestatus.protocol)
+mp.add_key_binding( m.ktype,"cycleshowtype",cyclevalue.type)
+mp.add_key_binding( m.ksize,"cycleshowsize",cyclevalue.size )
+mp.add_key_binding( m.kbitrate,"cycleshowbitrate",cyclevalue.bitrate)
+mp.add_key_binding( m.kfps,"cycleshowfps",cyclevalue.fps)
+mp.add_key_binding( m.kcache,"cycleshowcache",cyclevalue.cache)
+mp.add_key_binding( m.kplaytime,"cycleshowplaytime",cyclevalue.playtime)
+mp.add_key_binding( m.kautospeed,"cycleautospeed",cyclevalue.autospeed)
+mp.add_key_binding( m.kprotocol,"cycleshowprotocol",cyclevalue.protocol)
