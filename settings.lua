@@ -22,7 +22,7 @@ sssubdir = 0,				--「1」でチャンネル名でサブフォルダを作る。
 istatusbar = 1,				--ステータスバー（の代わりのタイトルバー）
 icursorhide = 2,			--マウスカーソルを自動的に隠す「1」。「2」はフルスクリーンのみ隠す
 iontop = 0,				--最前面表示
-iosc = 1,				--オンスクリーンコントローラー。「2」で常に表示
+iosc = 0,				--オンスクリーンコントローラー。「2」で常に表示
 iosd = 1,				--osdの表示
 recdir = "",				--録画フォルダ。フォルダの区切りは｢\\｣。よく壊れたファイルができます。「""」でビデオフォルダになります
 recsubdir = 0,				--「1」でチャンネル名でサブフォルダを作る。「0」で作らない
@@ -164,7 +164,7 @@ function getorgsize()
 end
 mp.register_event("file-loaded", getorgsize)
 
-function delay(sec,command1,command2,command3,...)
+function delay(sec,command1,command2,command3)
 	mp.add_timeout(sec,function()mp.commandv(command1,command2,command3)end)
 end
 
@@ -212,9 +212,19 @@ function applysettings()
 			mp.set_property("loop","yes")
 			mp.set_property("options/force-window", "immediate")
 			mp.set_property_number("options/demuxer-readahead-secs", 20)
+			print("apply")
 		end
 end
 mp.register_event("start-file",applysettings)
+
+function initialmute()
+	if	errorproof("path") and not mp.get_property_bool("mute",true) then
+	mp.set_property("mute","yes")
+	mp.add_timeout(4,function()mp.set_property("mute","no");print("start")end)
+	print("run")
+	end
+end
+mp.register_event("file-loaded",initialmute)
 
 function refresh()
 	if	errorproof("path") then
