@@ -2,7 +2,7 @@ local m={
 --タイトルバー用情報取得タイマーのlua。0で非表示または無効になります
 
 --ステータス表示とか
-showtype = 1,				--ビデオコーデック「1」かコンテナ表示「2」
+showtype = 1,				--ビデオコーデック「1」かコンテナ表示「2」。「3」で音声コーデック
 showsize = 3,				--解像度を表示。「2」は今のサイズのみ、「3」はソースサイズのみ表示
 showbitrate = 1,			--キーフレーム間のビットレート表示。
 showfps = 1,				--fps表示。「2」は今のfpsのみ、「3」は動画で設定されたfpsのみ表示
@@ -11,6 +11,7 @@ showplaytime = 1,			--再生時間（たまに総配信時間）を表示
 showprotocol = 0,			--flvの時にhttpかrtmpかを表示
 enablertmp = 0,				--flvの時に、「1」は初めはrtmpで再生する。「2」ですべてrtmpで再生する
 enableautospeed = 2,			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
+enableothers = 1,			--peercast以外でこのスクリプトを適用するか
 
 
 --表示切り替え用キーバインド
@@ -24,16 +25,38 @@ kprotocol =	"ctrl+9",
 kautospeed = 	"ctrl+0",
 
 
-
 --ここからスクリプトの処理コード
 }
+local s = {
+	offsetsec = 50,			--何秒で1秒分のバッファを相殺するか(50秒)
+	recsec = 4,			--数値の秒ごとにプレイヤーを再接続する(4秒)
+	incpossec = 10,			--数値の秒分以上になるとプレイリストを1つ送る(10秒)
+	decpossec = -5,			--プレイリストを送った後にこの秒数分のカウントを減らす(5秒分)
+	
+	playlistcount = 4,		--プレイリストの数で、この次にbumpがくる(4つ)
+	
+	limitavsync = 0.5,		--音ズレを何秒まで許容するか(0.5秒)
+	limitct = 2,			--音ズレ修正量を何秒まで許容するか(2秒)
+	
+	high = 10,   			--この以上バッファが貯まったら早送り開始(10秒)
+	low = 1.2,   			--これ以下になったら遅くする(1.2秒)
+	normal1 = 2,			--遅くして2秒分たまったら普通の速度に戻す(2秒)
+	normal2 = 3,			--早くして3秒分になったら普通の速度に戻す(3秒)
+	lowspeed = 0.95,	 	--遅くしたときの再生速度(0.95倍)
+	highspeed = 1.10,   		--速くしたときの再生速度(1.10倍)
+	persec = 0.01,			--バッファの秒数にこれをかけた分を足す(+0.01)
+	maxspeed = 2,			--速度の上限(2倍)
+
+}
+
 local videoinfo = {
 	fps = 0,
 	width = 0,
 	height = 0,
 	size = "0x0",
 	title = "",
-	type = ""
+	type = "",
+	codec = {}
 }
 
 local currentinfo ={
@@ -42,19 +65,15 @@ local currentinfo ={
 	height = 0,
 	bitrate = 0,
 	title = "",
-	type = ""
+	type = "",
+	vcodec = "",
+	acodec = ""
 }
+
 local pecainfo = {
 	stream = "/stream/".. string.rep("%x", 32),
 	pls = "/pls/".. string.rep("%x", 32),
-	playlistcount = 4
 	
-}
-
-local mpvinfo = {
-	limitavsync = 0.5,
-	limitct = 2
-
 }
 
 local t = {
@@ -146,7 +165,7 @@ function errorproof(case)
 end
 
 function avsync(name,value)
-	if	value ~= nil and math.abs(value) > mpvinfo.limitavsync then
+	if	value ~= nil and math.abs(value) > s.limitavsync then
 --		if	math.abs(value) > 100 then
 			mp.commandv("drop_buffers")
 			print("avsync:"..value)
@@ -164,7 +183,7 @@ end
 mp.observe_property("avsync", "number", avsync)
 
 function ct(name,value)
-	if	value ~= nil and math.abs(value) > mpvinfo.limitct then
+	if	value ~= nil and math.abs(value) > s.limitct then
 --		mp.commandv("playlist_next")
 --		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
 		mp.commandv("drop_buffers")
@@ -174,88 +193,122 @@ end
 mp.observe_property("total-avsync-change", "number", ct)
 
 get = {
---URL取得と分割
-path = function()
-    local fullpath = mp.get_property("path")
-    local id = {string.find(fullpath,"/stream/(%x*)")}
-    local a = {}
-    for i in string.gmatch(fullpath, "[^/]+") do
-      table.insert(a, i)
-    end
-    return fullpath,a[2],id[3]
-end,
+	--URL取得と分割
+	path = function()
+	    local fullpath = mp.get_property("path","")
+		if	string.find(fullpath,"admin?cmd=") then
+			local pos = mp.get_property_number("playlist-pos")
+			if	pos >= 1 then
+				fullpath = mp.get_property("playlist/".. pos-1 .."/filename")
+			else
+				fullpath = mp.get_property("playlist/".. pos+1 .."/filename")
+			end
+		end
+	    local id = {string.find(fullpath,"/stream/(%x*)")}
+	    local a = {}
+			for i in string.gmatch(fullpath, "[^/]+") do
+			table.insert(a, i)
+			end
+	--	else	return "","",""
+	--	end
+	    return fullpath,a[2],id[3]
+	end,
 
---mp.get_property("stream-pos")は不安定らしいからこれは使えない
-streampos = function ()
-	local streampos
-	print("1")
-	streampos = mp.get_property("stream-pos", 0)
-	print(streampos)
-	if 	streampos == 0 then
-		print("get_streampos_fail")
-	end
-	return streampos
-end,
+	--mp.get_property("stream-pos")は不安定らしいからこれは使えない
+	streampos = function ()
+		local streampos
+		print("1")
+		streampos = mp.get_property("stream-pos", 0)
+		print(streampos)
+		if 	streampos == 0 then
+			print("get_streampos_fail")
+		end
+		return streampos
+	end,
 
---ビットレート取得
-bitrate = function()
-	--キーフレーム間のビットレートを計測する方法
-	local pvrate = mp.get_property("packet-video-bitrate", 0)
-	local parate = mp.get_property("packet-audio-bitrate", 0)
+	--ビットレート取得
+	bitrate = function()
+		--キーフレーム間のビットレートを計測する方法
+		local pvrate = mp.get_property("packet-video-bitrate", 0)
+		local parate = mp.get_property("packet-audio-bitrate", 0)
 
-	if	vrate ~= pvrate then
-		vrate = pvrate
-		arate = parate
-		brate = vrate + arate
-	else
-		brate = vrate + arate
-	end
-	--ストリームのデータ量からビットレートを計算する方法
---	local streampos = get.streampos()
---		if 	srate == nil or srate == 0 then 
---			srate = streampos
---			brate = srate /1024 * 8
---		else
---			--mkv以外きちんと1秒平均とれないようだから2で割ってみた
---			brate = (brate + (streampos - srate) /1024 * 8)/2
---			srate = streampos
---		end
-	return brate
-end,
+		if	vrate ~= pvrate then
+			vrate = pvrate
+			arate = parate
+			brate = vrate + arate
+		else
+			brate = vrate + arate
+		end
+		--ストリームのデータ量からビットレートを計算する方法
+	--	local streampos = get.streampos()
+	--		if 	srate == nil or srate == 0 then 
+	--			srate = streampos
+	--			brate = srate /1024 * 8
+	--		else
+	--			--mkv以外きちんと1秒平均とれないようだから2で割ってみた
+	--			brate = (brate + (streampos - srate) /1024 * 8)/2
+	--			srate = streampos
+	--		end
+		return brate
+	end,
 
---キャッシュ取得
-cache = function()
-	local cache,demux,sec
-	cache = mp.get_property_number("cache-used", 0)
-	demux = mp.get_property_number("demuxer-cache-duration", 0)
-	if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
-		sec = cache/(get.bitrate() /8 ) + demux
-	else	sec = 0
-	end
-	return cache,demux,sec
-end,
+	--キャッシュ取得
+	cache = function()
+		local cache,demux,sec
+		cache = mp.get_property_number("cache-used", 0)
+		demux = mp.get_property_number("demuxer-cache-duration", 0)
+		if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
+			sec = cache/(get.bitrate() /8 ) + demux
+		else	sec = 0
+		end
+		return cache,demux,sec
+	end,
 
---解像度取得
-resolution = function(tateyoko)
-	if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
-	elseif tateyoko == "tateyoko" then 
-		tateyoko = string.format("%d",get.resolution("yoko")).."x"..string.format("%d",get.resolution("tate"))
---		elseif	type(tateyoko) == "string" then
---			tateyoko = string.format("%d", videoinfo.width).."x"..string.format("%d", videoinfo.height)
-	else	tateyoko = mp.get_property("osd-width", 0)
-	end
-	return tateyoko
-end,
+	--解像度取得
+	resolution = function(tateyoko)
+		if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
+		elseif tateyoko == "tateyoko" then 
+			tateyoko = string.format("%d",get.resolution("yoko")).."x"..string.format("%d",get.resolution("tate"))
+	--		elseif	type(tateyoko) == "string" then
+	--			tateyoko = string.format("%d", videoinfo.width).."x"..string.format("%d", videoinfo.height)
+		else	tateyoko = mp.get_property("osd-width", 0)
+		end
+		return tateyoko
+	end,
 
+		codec = function(type)
+			local i = 0
+			repeat videoinfo.codec[i+1] = mp.get_property("track-list/"..i.."/codec")
+				i = i + 1
+			until	videoinfo.codec[i] == nil
+			
+			if	not videoinfo.codec[1] then
+				return ""
+			end
+			
+			if	mp.get_property("track-list/0/type","") == "video" then
+				currentinfo.vcodec = videoinfo.codec[1]
+				currentinfo.acodec = videoinfo.codec[2]
+			else	currentinfo.vcodec = videoinfo.codec[2]
+				currentinfo.acodec = videoinfo.codec[1]
+			end
+			if	type == "video" then
+				return currentinfo.vcodec
+			else	return currentinfo.acodec
+			end
+		end
 
---ステータス集めて渡す
---status = function()
---	tset("display")
---		elseif	case == "display" 
---		t.barlist = t.rec..t.protocol..t.type .. t.mediatitle..t.speed .. t.info .. t.cache .. " ".. t.time .. t.vol
---		return t.barlist
---end
-
+	--		if	m.showtype == 1 then
+	--			if 	mp.get_property("track-list/0/type") == "video" then
+	--				t.type = mp.get_property("track-list/0/codec")
+	--			else	t.type = mp.get_property("track-list/1/codec")
+	--			end
+	--		elseif	m.showtype == 2 then t.type = mp.get_property("file-format")
+	--		end
+	--		if	not t.type or m.showtype == 0 then t.type = ""
+	--		else	t.type = "["..t.type.."]"
+	--		end
+	--		return	t.type
 }
 
 tset = function(case)
@@ -266,15 +319,17 @@ tset = function(case)
 		end
 	--ビデオコーデック取得
 	elseif	case == "codec"	then
-		if	m.showtype == 1 then
-			if 	mp.get_property("track-list/0/type") == "video" then
-				t.type = mp.get_property("track-list/0/codec")
-			else	t.type = mp.get_property("track-list/1/codec")
+		local video,audio,container
+		if	m.showtype ~= 0 then
+			video = get.codec("video")
+			audio = get.codec("audio")
+			container = mp.get_property("file-format","")
+			if	m.showtype == 1 then
+				t.type = "["..video.."]"
+			elseif	m.showtype == 2 then t.type = "["..container.."]"
+			elseif	m.showtype == 3 then t.type = "["..audio.."]"
 			end
-		elseif	m.showtype == 2 then t.type = mp.get_property("file-format")
-		end
-		if	not t.type or m.showtype == 0 then t.type = ""
-		else	t.type = "["..t.type.."]"
+		else	t.type = ""
 		end
 --		return	t.type
 	--解像度
@@ -421,35 +476,35 @@ function setplaylist()
 			mp.commandv("playlist_clear")		
 			if	m.enablertmp == 1	then
 				mp.add_timeout(0.1, function()
-					playlist.set("rtmp",pecainfo.playlistcount,"http")
+					playlist.set("rtmp",s.playlistcount,"http")
 				end)
 				loadlist = true
 			elseif	m.enablertmp == 2	then
 				mp.add_timeout(0.1, function()
-					playlist.set("rtmp",pecainfo.playlistcount)
+					playlist.set("rtmp",s.playlistcount)
 				end)
 				loadlist = true
 			else
 				mp.add_timeout(0.1, function()
-					playlist.set("http",pecainfo.playlistcount)
+					playlist.set("http",s.playlistcount)
 				end)
 				loadlist = true			
 			end
 			
 		elseif mp.get_property("file-format","") == "asf" then
 			mp.add_timeout(0.1, (function()
-				playlist.set("mmsh",pecainfo.playlistcount)
+				playlist.set("mmsh",s.playlistcount)
 			end))
 			loadlist = true
 		else
 
 			mp.add_timeout(0.1, (function()
-				playlist.set("http",pecainfo.playlistcount)
+				playlist.set("http",s.playlistcount)
 			end))
 			loadlist = true
 				
 		end
-	elseif errorproof("path") and mp.get_property_number("playlist-count") > pecainfo.playlistcount + 1 then
+	elseif errorproof("path") and mp.get_property_number("playlist-count") > s.playlistcount + 1 then
 		resetplaylist()
 	end
 end
@@ -460,13 +515,19 @@ end
 mp.register_event("file-loaded", setplaylist)
 --mp.register_event("start-file", setplaylist)
 
-
+function wmapro()
+	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then
+		--mp.set_property_number("options/mc",0.0001)
+		s.limitct = 100000
+	end
+end
+mp.register_event("playback-restart",wmapro)
 
 
 function manualrtmp()
 	loadlist = false
 --	mp.add_timeout(0.1, function()
-		playlist.set("rtmp",pecainfo.playlistcount,"http")
+		playlist.set("rtmp",s.playlistcount,"http")
 --	end)
 	loadlist = true
 end
@@ -506,6 +567,8 @@ getorginfo = {
 mp.register_event("file-loaded", getorginfo.start)
 
 
+
+
 --キャッシュ量を再生スピードで調整
 function autospeed()
 	if errorproof("playing")
@@ -514,33 +577,25 @@ function autospeed()
 	and m.enableautospeed ~= 0
 	then
 	local a,b,buffer = get.cache()
-		local high = 10   			--10秒バッファが貯まったら早送り開始
-		local low = 1.2   			--1.2秒以下になったら遅くする
-		local normal1 = 2			--遅くして2秒分たまったら普通の速度に戻す
-		local normal2 = 3			--早くして3秒分になったら普通の速度に戻す
-		local lowspeed = 0.95	 		--遅くしたときの再生速度
-		local highspeed = 1.10   		--速くしたときの再生速度
-		local persec = 0.01			--バッファの秒数にこれをかけた分を足す
-		local maxspeed = 2			--速度の上限
-		
+
 		local curspd
-		if	m.enableautospeed == 2 then lowspeed = 1
+		if	m.enableautospeed == 2 then s.lowspeed = 1
 		end
-		if	highspeed+persec*buffer < maxspeed then
-			curspd = highspeed+persec*buffer
+		if	s.highspeed+s.persec*buffer < s.maxspeed then
+			curspd = s.highspeed+s.persec*buffer
 			else
-			curspd = maxspeed
+			curspd = s.maxspeed
 		end
 		
-		if 	buffer > normal1 and buffer < normal2 then
+		if 	buffer > s.normal1 and buffer < s.normal2 then
 			mp.set_property("speed", 1.00)
-		elseif	buffer < low then
-			mp.set_property("speed", lowspeed)
-		elseif buffer > high then
+		elseif	buffer < s.low then
+			mp.set_property("speed", s.lowspeed)
+		elseif buffer > s.high then
 			mp.set_property("speed", curspd)
-		elseif mp.get_property_number("speed") <= lowspeed and buffer > normal1 then
+		elseif mp.get_property_number("speed") <= s.lowspeed and buffer > s.normal1 then
 			mp.set_property("speed", 1.00)
-		elseif mp.get_property_number("speed") >= highspeed and buffer < normal2 then
+		elseif mp.get_property_number("speed") >= s.highspeed and buffer < s.normal2 then
 			mp.set_property("speed", 1.00)
 		end
 	else	mp.set_property("speed", 1.00)
@@ -567,7 +622,7 @@ function test()
 --print(mp.get_property("monitorpixelaspect"))
 --print(mp.get_property("video-aspect"))
 --print(mp.get_property("options/osc"))
-print(mp.get_property("playlist"))
+--print(mp.get_property("playlist"))
 --print(loadlist)
 --mp.set_property("vf","scale=".. 800 .. ":" .. -3)-- ..":1:1")
 --mp.set_property_number("window-scale" , 1)
@@ -577,7 +632,8 @@ print(mp.get_property("playlist"))
 --print(mp.get_property_number("playlist-pos"))
 --print(mp.get_property_number("video-bitrate"))
 --mp.osd_message(mp.get_property("path"),5)
-mp.osd_message(mp.get_property("path"),5)
+--mp.osd_message(mp.get_property("path"),5)
+print(mp.get_property("playlist/0/filename"))
 --local f = io.open("test.txt", "r")
 --local a=io.open("testwrite.txt","w+")
 --for line in f:lines() do
@@ -608,11 +664,11 @@ mp.add_key_binding("KP7","refresh",refresh)
 local count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
---	if	errorproof("path") then
+	if	errorproof("path") or m.enableothers == 1 then
 		if 	not errorproof("firststart") or not errorproof("path") then
 			autospeed()
 			mp.set_property("options/title", tset("display") )
-			bumpcount()
+			bumpcount();--mp.osd_message("others")
 		else 			
 			count = count + 1
 			if	errorproof("path") and count >= 21 then
@@ -624,22 +680,17 @@ mp.add_periodic_timer(1, (function()
 			end		
 		end
 --	else	
---	end
+	end
 end))
 
 --早めに再開できるようにと、再生と停止を繰り返すときの処理
 function bumpcount()
 	local pos = mp.get_property_number("playlist-pos",0)
 	local inccount = 10					--止まった時に1秒ごとに増える数
-	local offsetsec = 50					--何秒で1秒分のバッファを相殺するか
-	local recsec = 4					--数値の秒ごとにプレイヤーを開き直す
-	local incpossec = 10					--数値の秒分以上になるとプレイリストを1つ送る
-	local decpossec = -5					--プレイリストを送った後にこの秒数分カウントを減らす
-	
-	local reccount = recsec * inccount
-	local incposcount = incpossec * inccount
-	local decposcount = -1 * math.abs(decpossec) * inccount
-	local deccount = -1 * inccount / offsetsec
+	local reccount = s.recsec * inccount
+	local incposseccount = s.incpossec * inccount
+	local decposcount = -1 * math.abs(s.decpossec) * inccount
+	local deccount = -1 * inccount / s.offsetsec
 	
 	count = (math.modf(count*1000))/1000
 
@@ -651,7 +702,7 @@ function bumpcount()
 		--	bump.t()
 		--	resetplaylist()
 		--	count = count - 200
-		if	math.fmod(math.floor(count/10),math.floor(incposcount/10)) == 0 then --count >= 100 then
+		if	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then --count >= 100 then
 			mp.commandv("playlist-next")
 			count = count + decposcount
 			print("current pos:".. pos + 1 .."  count"..decposcount.." count:"..count)
@@ -671,7 +722,7 @@ function bumpcount()
 end
 
 local maxvalue = {
-	type = 2,
+	type = 3,
 	size = 3,
 	bitrate = 1,
 	fps = 3,
