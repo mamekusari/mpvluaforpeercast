@@ -38,7 +38,7 @@ local s = {
 	limitavsync = 0.5,		--音ズレを何秒まで許容するか(0.5秒)
 	limitct = 2,			--音ズレ修正量を何秒まで許容するか(2秒)
 	
-	high = 10,   			--この以上バッファが貯まったら早送り開始(10秒)
+	high = 10,   			--これ以上バッファが貯まったら早送り開始(10秒)
 	low = 1.2,   			--これ以下になったら遅くする(1.2秒)
 	normal1 = 2,			--遅くして2秒分たまったら普通の速度に戻す(2秒)
 	normal2 = 3,			--早くして3秒分になったら普通の速度に戻す(3秒)
@@ -284,14 +284,22 @@ get = {
 			
 			if	not videoinfo.codec[1] then
 				return ""
+			elseif	not videoinfo.codec[2] then
+				if	mp.get_property("track-list/0/type","") == "video" then
+					currentinfo.vcodec = videoinfo.codec[1]
+					currentinfo.acodec = "none"
+				else	currentinfo.acodec = videoinfo.codec[1]
+					currentinfo.vcodec = "none"
+				end
+			elseif	not videoinfo.codec[3] then
+				if	mp.get_property("track-list/0/type","") == "video" then
+					currentinfo.vcodec = videoinfo.codec[1]
+					currentinfo.acodec = videoinfo.codec[2]
+				else	currentinfo.vcodec = videoinfo.codec[2]
+					currentinfo.acodec = videoinfo.codec[1]
+				end
 			end
 			
-			if	mp.get_property("track-list/0/type","") == "video" then
-				currentinfo.vcodec = videoinfo.codec[1]
-				currentinfo.acodec = videoinfo.codec[2]
-			else	currentinfo.vcodec = videoinfo.codec[2]
-				currentinfo.acodec = videoinfo.codec[1]
-			end
 			if	type == "video" then
 				return currentinfo.vcodec
 			else	return currentinfo.acodec
