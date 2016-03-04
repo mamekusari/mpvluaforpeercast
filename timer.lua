@@ -517,6 +517,7 @@ function wmapro()
 	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then
 		--mp.set_property_number("options/mc",0.0001)
 		s.limitct = 100000
+		s.limitavsync = 2
 	end
 end
 mp.register_event("playback-restart",wmapro)
