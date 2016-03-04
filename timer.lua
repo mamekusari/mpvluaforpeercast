@@ -276,47 +276,37 @@ get = {
 		return tateyoko
 	end,
 
-		codec = function(type)
-			local i = 0
-			repeat videoinfo.codec[i+1] = mp.get_property("track-list/"..i.."/codec")
-				i = i + 1
-			until	videoinfo.codec[i] == nil
-			
-			if	not videoinfo.codec[1] then
-				return ""
-			elseif	not videoinfo.codec[2] then
-				if	mp.get_property("track-list/0/type","") == "video" then
-					currentinfo.vcodec = videoinfo.codec[1]
-					currentinfo.acodec = "none"
-				else	currentinfo.acodec = videoinfo.codec[1]
-					currentinfo.vcodec = "none"
-				end
-			elseif	not videoinfo.codec[3] then
-				if	mp.get_property("track-list/0/type","") == "video" then
-					currentinfo.vcodec = videoinfo.codec[1]
-					currentinfo.acodec = videoinfo.codec[2]
-				else	currentinfo.vcodec = videoinfo.codec[2]
-					currentinfo.acodec = videoinfo.codec[1]
-				end
+	codec = function(type)
+		local count = mp.get_property_number("track-list/count",0)
+		local i = 0
+		repeat videoinfo.codec[i+1] = mp.get_property("track-list/"..i.."/codec")
+			i = i + 1
+		until	videoinfo.codec[i] == nil
+		
+		if	count == 0 then--not videoinfo.codec[1] then
+			return ""
+		elseif	count == 1 then --not videoinfo.codec[2] then
+			if	mp.get_property("track-list/0/type","") == "video" then
+				currentinfo.vcodec = videoinfo.codec[1]
+				currentinfo.acodec = "none"
+			else	currentinfo.acodec = videoinfo.codec[1]
+				currentinfo.vcodec = "none"
 			end
-			
-			if	type == "video" then
-				return currentinfo.vcodec
-			else	return currentinfo.acodec
+		elseif	count == 2 then--not videoinfo.codec[3] then
+			if	mp.get_property("track-list/0/type","") == "video" then
+				currentinfo.vcodec = videoinfo.codec[1]
+				currentinfo.acodec = videoinfo.codec[2]
+			else	currentinfo.vcodec = videoinfo.codec[2]
+				currentinfo.acodec = videoinfo.codec[1]
 			end
 		end
+		
+		if	type == "video" then
+			return currentinfo.vcodec
+		else	return currentinfo.acodec
+		end
+	end
 
-	--		if	m.showtype == 1 then
-	--			if 	mp.get_property("track-list/0/type") == "video" then
-	--				t.type = mp.get_property("track-list/0/codec")
-	--			else	t.type = mp.get_property("track-list/1/codec")
-	--			end
-	--		elseif	m.showtype == 2 then t.type = mp.get_property("file-format")
-	--		end
-	--		if	not t.type or m.showtype == 0 then t.type = ""
-	--		else	t.type = "["..t.type.."]"
-	--		end
-	--		return	t.type
 }
 
 tset = function(case)
