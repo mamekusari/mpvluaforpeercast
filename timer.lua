@@ -534,13 +534,23 @@ mp.add_key_binding("KP9", "manualrtmp" , manualrtmp)
 
 getorginfo = {
 	title = function()
+	--print(mp.get_property("media-title","nomediatitle").. " | " ..mp.get_property("options/title","notitle"))
 		if	errorproof("path") then
-			if	string.find(mp.get_property("media-title",""), string.rep("%x", 32)) then
-				t.mediatitle = mp.get_property("options/title")
+			local mediatitle = mp.get_property("media-title","no media title")
+			local title = mp.get_property("options/title","no title")
+			if	string.find(mediatitle, string.rep("%x", 32))
+			and	(string.find(title,"no title") or string.find(title,"No file"))
+			then
+				t.mediatitle = "no title"
 				mp.set_property("options/force-media-title",t.mediatitle)
-			else	t.mediatitle = mp.get_property("media-title","")
+			--	print "1"
+			elseif	string.find(mediatitle, string.rep("%x", 32)) then
+				t.mediatitle = mp.get_property("options/title","no title")
+				mp.set_property("options/force-media-title",t.mediatitle)
+			--	print "2"
+			else	t.mediatitle = mp.get_property("media-title","no title")
+			--	print "3"
 			end
-		else	t.mediatitle = mp.get_property("media-title","")
 		end
 	end,
 	
