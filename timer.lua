@@ -10,7 +10,7 @@ showcache = 1,				--大体のバッファサイズを表示。「2」でdemux+ca
 showplaytime = 1,			--再生時間（たまに総配信時間）を表示
 showprotocol = 0,			--flvの時にhttpかrtmpかを表示
 enablertmp = 0,				--flvの時に、「1」は初めはrtmpで再生する。「2」ですべてrtmpで再生する
-enableautospeed = 2,			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
+enableautospeed = 1,			--キャッシュ量の自動調整。「2」でたまったときだけ調整、「0」で無効
 enableothers = 1,			--peercast以外でこのスクリプトを適用するか
 
 
@@ -410,7 +410,7 @@ tset = function(case)
 		if	sec ~= sec or get.bitrate() == 0 then sec = "-"
 		else	sec = string.format("%3.1fs",sec)
 		end
-		if	m.showcache == 0 then t.cache = ""
+		if	m.showcache == 0 or cache+demux == 0 then t.cache = ""
 		elseif	m.showcache == 1 then t.cache = sec
 		elseif	m.showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demux,cache)
 		end
@@ -584,6 +584,7 @@ function autospeed()
 	and brate ~= nil  
 	and mp.get_property_number("packet-video-bitrate", 0) > 1
 	and m.enableautospeed ~= 0
+	and not string.find(mp.get_property_number("cache","none"),"none")
 	then
 	local a,b,buffer = get.cache()
 
@@ -615,11 +616,11 @@ end
 function test()
 --	mp.set_property("stream-pos" , 0 )
 --	print(mp.get_property("stream-capture"))
-	print(mp.get_property("time-pos"))
+--	print(mp.get_property("time-pos"))
 --	print(mp.get_property("fps"))
 --	print(mp.get_property("speed"))
 --	print(mp.get_property("playback-time"))
-	print(mp.get_property("time-start"))
+--	print(mp.get_property("time-start"))
 --	mp.commandv("seek","1")
 --	print(mp.get_property("window-minimized"))
 --	print(os.execute("intWindowStyle"))
@@ -632,6 +633,9 @@ function test()
 --print(mp.get_property("video-aspect"))
 --print(mp.get_property("options/osc"))
 --print(mp.get_property("playlist"))
+print(mp.get_property_number("cache-used","none"))
+print(mp.get_property_number("cache","cache"))
+print(mp.get_property_number("cache-duration","duration"))
 --print(loadlist)
 --mp.set_property("vf","scale=".. 800 .. ":" .. -3)-- ..":1:1")
 --mp.set_property_number("window-scale" , 1)
