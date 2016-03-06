@@ -30,8 +30,9 @@ kautospeed = 	"ctrl+0",
 local s = {
 	offsetsec = 50,			--何秒で1秒分のバッファを相殺するか(50秒)
 	recsec = 4,			--数値の秒ごとにプレイヤーを再接続する(4秒)
-	incpossec = 10,			--数値の秒分以上になるとプレイリストを1つ送る(10秒)
-	decpossec = -5,			--プレイリストを送った後にこの秒数分のカウントを減らす(5秒分)
+	incpossec = 10,			--数値の秒ごとにプレイリストを1つ送る(10秒)
+	decpossec = 5,			--プレイリストを送った後にこの秒数分のカウントを増やす(5秒分)
+	bumpsec = 40,			--これ以上たまるとリレーを再接続する(40秒)
 	
 	playlistcount = 4,		--プレイリストの数で、この次にbumpがくる(4つ)
 	
@@ -100,7 +101,7 @@ playlist = {
 		end,
 	addurl = function(protocol,times)
 			if	errorproof("path") then
-				local streampath,localhost,streamid = get.path()
+			--	local streampath,localhost,streamid = get.path()
 				repeat mp.commandv("loadfile", playlist.geturl(protocol) , "append")
 				if	not times then times = 1
 				end
@@ -134,12 +135,35 @@ bump = {
 	addurl = function()
 			mp.commandv("loadfile", bump.geturl(), "append")
 		end,
-	t = function()
-			mp.commandv("playlist-clear")
-			mp.commandv("loadfile", bump.geturl(), "append")
-			mp.commandv("playlist-next")
-			mp.osd_message("bump")
+	pos = function()
+		local playlistcount = mp.get_property_number("playlist-count",0)
+		local bumpurl
+		local i = 0
+		repeat bumpurl = string.find(mp.get_property("playlist/".. i .."/filename",""), "/admin??cmd=")
+			i = i + 1
+			until bumpurl  or playlistcount < i
+		if	playlistcount < i then
+			i = "no bump url"
 		end
+		return i,playlistcount,mp.get_property_number("playlist-pos",0)+1 --0は入れてない
+		
+	end,
+	t = function()
+		local bumppos,playlistcount,currentpos = bump.pos()
+		if	bumppos > currentpos then
+			for i = currentpos , bumppos - 1 do
+				mp.commandv("playlist-next")
+				print(i)
+			end
+		else
+			for i = bumppos , playlistcount - currentpos + bumppos + 1 do
+				mp.commandv("playlist-next")
+				print(i)
+			end
+		end
+		mp.osd_message("bump",3)
+
+	end
 }
 
 function errorproof(case)
@@ -195,9 +219,9 @@ mp.observe_property("total-avsync-change", "number", ct)
 get = {
 	--URL取得と分割
 	path = function()
-	    local fullpath = mp.get_property("path","")
-		if	string.find(fullpath,"admin?cmd=") then
-			local pos = mp.get_property_number("playlist-pos")
+	    local fullpath = mp.get_property("playlist/0/filename","")
+		if	string.find(fullpath,"admin??cmd=") then
+			local pos = mp.get_property_number("playlist-pos",0)
 			if	pos >= 1 then
 				fullpath = mp.get_property("playlist/".. pos-1 .."/filename")
 			else
@@ -209,8 +233,6 @@ get = {
 			for i in string.gmatch(fullpath, "[^/]+") do
 			table.insert(a, i)
 			end
-	--	else	return "","",""
-	--	end
 	    return fullpath,a[2],id[3]
 	end,
 
@@ -517,7 +539,7 @@ function wmapro()
 	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then
 		--mp.set_property_number("options/mc",0.0001)
 		s.limitct = 100000
-		s.limitavsync = 2
+		s.limitavsync = 100
 	end
 end
 mp.register_event("playback-restart",wmapro)
@@ -614,6 +636,7 @@ function autospeed()
 end
 
 function test()
+print(bump.pos())
 --	mp.set_property("stream-pos" , 0 )
 --	print(mp.get_property("stream-capture"))
 --	print(mp.get_property("time-pos"))
@@ -632,10 +655,10 @@ function test()
 --print(mp.get_property("monitorpixelaspect"))
 --print(mp.get_property("video-aspect"))
 --print(mp.get_property("options/osc"))
---print(mp.get_property("playlist"))
-print(mp.get_property_number("cache-used","none"))
-print(mp.get_property_number("cache","cache"))
-print(mp.get_property_number("cache-duration","duration"))
+print(mp.get_property("playlist"))
+--print(mp.get_property_number("cache-used","none"))
+--print(mp.get_property_number("cache","cache"))
+--print(mp.get_property_number("cache-duration","duration"))
 --print(loadlist)
 --mp.set_property("vf","scale=".. 800 .. ":" .. -3)-- ..":1:1")
 --mp.set_property_number("window-scale" , 1)
@@ -656,8 +679,8 @@ print(mp.get_property("playlist/0/filename"))
 
 
 --f:close()
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+bump.t()
+--mp.add_timeout(5,resetplaylist())
 end
 mp.add_key_binding("KP8", "test" , test)
 
@@ -681,14 +704,15 @@ mp.add_periodic_timer(1, (function()
 		if 	not errorproof("firststart") or not errorproof("path") then
 			autospeed()
 			mp.set_property("options/title", tset("display") )
-			bumpcount();--mp.osd_message("others")
+			if errorproof("path") then reconnect()
+			end
 		else 			
 			count = count + 1
 			if	errorproof("path") and count >= 21 then
 				mp.set_property("loop", "yes")
-				bump.t()
 --				playlist.addurl()
 				resetplaylist()
+				bump.t()
 				count = 0
 			end		
 		end
@@ -697,13 +721,14 @@ mp.add_periodic_timer(1, (function()
 end))
 
 --早めに再開できるようにと、再生と停止を繰り返すときの処理
-function bumpcount()
+function reconnect()
 	local pos = mp.get_property_number("playlist-pos",0)
 	local inccount = 10					--止まった時に1秒ごとに増える数
 	local reccount = s.recsec * inccount
 	local incposseccount = s.incpossec * inccount
-	local decposcount = -1 * math.abs(s.decpossec) * inccount
+	local decposcount = math.abs(s.decpossec) * inccount
 	local deccount = -1 * inccount / s.offsetsec
+	local bumpcount = bumpsec * inccount
 	
 	count = (math.modf(count*1000))/1000
 
@@ -711,17 +736,17 @@ function bumpcount()
 
 		count = count + inccount
 --		print("count+"..inccount.." count:"..count)
-		--if	count >= 200 then
-		--	bump.t()
+		if	count >= bumpcount then
+			bump.t()
 		--	resetplaylist()
-		--	count = count - 200
-		if	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then --count >= 100 then
+			count = 0
+		elseif	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then --count >= 100 then
 			mp.commandv("playlist-next")
 			count = count + decposcount
-			print("current pos:".. pos + 1 .."  count"..decposcount.." count:"..count)
+			print("current pos:".. pos + 2 .."  count"..decposcount.." count:"..count)
 		elseif	math.fmod(math.floor(count/10),math.floor(reccount/10)) == 0 then
 			mp.set_property_number("playlist-pos",pos)
-			print "reconnect"
+			print ("reconnect".." count:"..count)
 		end
 		
 	else
