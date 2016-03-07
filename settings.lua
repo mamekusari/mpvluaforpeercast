@@ -1,71 +1,68 @@
 local s={
---ã‚­ãƒ¼ãƒã‚¤ãƒ³ãƒ‰ã¯ã€ŒTã€ã ã¨shift+tã§ã€Œtã€ã§å˜ä½“ã®tã«ãªã‚Šã¾ã™ã€‚ã€Œshift+tã€ã®æŒ‡å®šã‚‚ã§ãã¾ã™
---mpvã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯ç„¡åŠ¹ã«ãªã£ã¦ã„ãªã„ã®ã§ãŸã¨ãˆã°qã‚’æŠ¼ã™ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãŒçµ‚äº†ã—ã¾ã™
+--ƒL[ƒoƒCƒ“ƒh‚ÍuTv‚¾‚Æshift+t‚Åutv‚Å’P‘Ì‚Ìt‚É‚È‚è‚Ü‚·Bushift+tv‚Ìw’è‚à‚Å‚«‚Ü‚·
+--mpv‚ÌƒfƒtƒHƒ‹ƒg‚Í–³Œø‚É‚È‚Á‚Ä‚¢‚È‚¢‚Ì‚Å‚½‚Æ‚¦‚Îq‚ğ‰Ÿ‚·‚ÆƒvƒŒƒCƒ„[‚ªI—¹‚µ‚Ü‚·
 
 
---åˆæœŸè¨­å®š
---ãƒœãƒªãƒ¥ãƒ¼ãƒ é–¢ä¿‚				--ä¸‹ã®æ–¹ã«ã‚ã‚‹ã‚­ãƒ¼å‰²ã‚Šå½“ã¦ã‚’å¤‰ãˆãŸã‚‰ãƒ›ã‚¤ãƒ¼ãƒ«ã¨ã‹controlã¨ã‹ã¯ãã®ã‚­ãƒ¼ã«å¤‰ã‚ã‚Šã¾ã™
-ivolume = 50,				--åˆæœŸãƒœãƒªãƒ¥ãƒ¼ãƒ 
-maxvolume = 130,			--ãƒœãƒªãƒ¥ãƒ¼ãƒ ã®æœ€å¤§å€¤ã€‚130ã§å¤§ä½“100ã®2å€ã®éŸ³é‡ã«ãªã‚Šã¾ã™
-volume = 5,				--ãƒã‚¦ã‚¹ãƒ›ã‚¤ãƒ¼ãƒ«ã®å¤‰æ›´é‡
-ctrlvolume = 3,				--controlæŠ¼ã—ãªãŒã‚‰ã®æ™‚
-shiftvolume = 1,			--shiftæŠ¼ã—ãªãŒã‚‰ã®æ™‚
+--‰Šúİ’è
+--ƒ{ƒŠƒ…[ƒ€ŠÖŒW				--‰º‚Ì•û‚É‚ ‚éƒL[Š„‚è“–‚Ä‚ğ•Ï‚¦‚½‚çƒzƒC[ƒ‹‚Æ‚©control‚Æ‚©‚Í‚»‚ÌƒL[‚É•Ï‚í‚è‚Ü‚·
+ivolume = 50,				--‰Šúƒ{ƒŠƒ…[ƒ€
+maxvolume = 130,			--ƒ{ƒŠƒ…[ƒ€‚ÌÅ‘å’lB130‚Å‘å‘Ì100‚Ì2”{‚Ì‰¹—Ê‚É‚È‚è‚Ü‚·
+volume = 5,				--ƒ}ƒEƒXƒzƒC[ƒ‹‚Ì•ÏX—Ê
+ctrlvolume = 3,				--control‰Ÿ‚µ‚È‚ª‚ç‚Ì
+shiftvolume = 1,			--shift‰Ÿ‚µ‚È‚ª‚ç‚Ì
 
---ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚·ãƒ§ãƒƒãƒˆé–¢ä¿‚
-sstype = "jpg",				--ã€Œ"png"ã€åˆã¯ã€Œ"jpg"ã€
-jpgquality = 90,			--jpgã®æ™‚ã®ç”»è³ªã€‚0-100
-sssize = 1,				--ã‚½ãƒ¼ã‚¹ã‚µã‚¤ã‚ºã€Œ1ã€ã‹è¡¨ç¤ºwindowã‚µã‚¤ã‚ºã€Œ0ã€ã‹
-ssdir = "",	 			--ä¿å­˜å ´æ‰€ã€‚ãƒ•ã‚©ãƒ«ãƒ€ã®åŒºåˆ‡ã‚Šã¯ï½¢\\ï½£ã€‚ã€Œ""ã€ã§ãƒã‚¤ãƒ”ã‚¯ãƒãƒ£ã«ãªã‚Šã¾ã™
-sssubdir = 0,				--ã€Œ1ã€ã§ãƒãƒ£ãƒ³ãƒãƒ«åã§ã‚µãƒ–ãƒ•ã‚©ãƒ«ãƒ€ã‚’ä½œã‚‹ã€‚ã€Œ0ã€ã§ã¤ãã‚‰ãªã„
+--ƒXƒNƒŠ[ƒ“ƒVƒ‡ƒbƒgŠÖŒW
+sstype = "bmp",				--u"png"v–”‚Íu"jpg"v
+jpgquality = 90,			--jpg‚Ì‚Ì‰æ¿B0-100
+sssize = 1,				--ƒ\[ƒXƒTƒCƒYu1v‚©•\¦windowƒTƒCƒYu0v‚©
+ssdir = "",	 			--•Û‘¶êŠBƒtƒHƒ‹ƒ_‚Ì‹æØ‚è‚Í¢\\£Bu""v‚Åƒ}ƒCƒsƒNƒ`ƒƒ‚É‚È‚è‚Ü‚·
+sssubdir = 0,				--u1v‚Åƒ`ƒƒƒ“ƒlƒ‹–¼‚ÅƒTƒuƒtƒHƒ‹ƒ_‚ğì‚éBu0v‚Å‚Â‚­‚ç‚È‚¢
 
---ãã®ä»–					--ä¿å­˜ãƒ•ã‚©ãƒ«ãƒ€ä»¥å¤–ã¯0ã§ç„¡åŠ¹ã«ãªã‚Šã¾ã™
-istatusbar = 1,				--ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒãƒ¼ï¼ˆã®ä»£ã‚ã‚Šã®ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ï¼‰
-icursorhide = 2,			--ãƒã‚¦ã‚¹ã‚«ãƒ¼ã‚½ãƒ«ã‚’è‡ªå‹•çš„ã«éš ã™ã€Œ1ã€ã€‚ã€Œ2ã€ã¯ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã®ã¿éš ã™
-iontop = 0,				--æœ€å‰é¢è¡¨ç¤º
-iosc = 0,				--ã‚ªãƒ³ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ãƒ¼ã€‚ã€Œ2ã€ã§å¸¸ã«è¡¨ç¤º
-iosd = 1,				--osdã®è¡¨ç¤º
-recdir = "",				--éŒ²ç”»ãƒ•ã‚©ãƒ«ãƒ€ã€‚ãƒ•ã‚©ãƒ«ãƒ€ã®åŒºåˆ‡ã‚Šã¯ï½¢\\ï½£ã€‚ã‚ˆãå£Šã‚ŒãŸãƒ•ã‚¡ã‚¤ãƒ«ãŒã§ãã¾ã™ã€‚ã€Œ""ã€ã§ãƒ“ãƒ‡ã‚ªãƒ•ã‚©ãƒ«ãƒ€ã«ãªã‚Šã¾ã™
-recsubdir = 0,				--ã€Œ1ã€ã§ãƒãƒ£ãƒ³ãƒãƒ«åã§ã‚µãƒ–ãƒ•ã‚©ãƒ«ãƒ€ã‚’ä½œã‚‹ã€‚ã€Œ0ã€ã§ä½œã‚‰ãªã„
+--‚»‚Ì‘¼					--•Û‘¶ƒtƒHƒ‹ƒ_ˆÈŠO‚Í0‚Å–³Œø‚É‚È‚è‚Ü‚·
+istatusbar = 1,				--ƒXƒe[ƒ^ƒXƒo[i‚Ì‘ã‚í‚è‚Ìƒ^ƒCƒgƒ‹ƒo[j
+icursorhide = 2,			--ƒ}ƒEƒXƒJ[ƒ\ƒ‹‚ğ©“®“I‚É‰B‚·u1vBu2v‚Íƒtƒ‹ƒXƒNƒŠ[ƒ“‚Ì‚İ‰B‚·
+iontop = 0,				--Å‘O–Ê•\¦
+iosc = 0,				--ƒIƒ“ƒXƒNƒŠ[ƒ“ƒRƒ“ƒgƒ[ƒ‰[Bu2v‚Åí‚É•\¦
+iosd = 1,				--osd‚Ì•\¦
 
 
---ã‚­ãƒ¼ãƒã‚¤ãƒ³ãƒ‰				--ï¼ˆï¼‰å†…ã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ
---éŸ³é–¢ä¿‚
-kvolup = "Up",				--ãƒœãƒªãƒ¥ãƒ¼ãƒ ã‚¢ãƒƒãƒ—ï¼ˆâ†‘ã‚­ãƒ¼ï¼‰
-kvoldown = "Down",			--ãƒœãƒªãƒ¥ãƒ¼ãƒ ãƒ€ã‚¦ãƒ³ï¼ˆâ†“ã‚­ãƒ¼ï¼‰
-kvolup_wheel = "MOUSE_BTN3",		--ãƒœãƒªãƒ¥ãƒ¼ãƒ ã‚¢ãƒƒãƒ—2ã¤ã‚ï¼ˆãƒ›ã‚¤ãƒ¼ãƒ«â†‘ï¼‰
-kvoldown_wheel = "MOUSE_BTN4",		--ãƒœãƒªãƒ¥ãƒ¼ãƒ ãƒ€ã‚¦ãƒ³2ã¤ã‚ï¼ˆãƒ›ã‚¤ãƒ¼ãƒ«â†“ï¼‰
-kvolup2 = "Ctrl+MOUSE_BTN3",		--ä¸­ãƒœãƒªãƒ¥ãƒ¼ãƒ ã‚¢ãƒƒãƒ—ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰ãƒ›ã‚¤ãƒ¼ãƒ«â†‘ï¼‰
-kvoldown2 = "Ctrl+MOUSE_BTN4",		--ä¸­ãƒœãƒªãƒ¥ãƒ¼ãƒ ãƒ€ã‚¦ãƒ³ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰ãƒ›ã‚¤ãƒ¼ãƒ«â†“ï¼‰
-kvolup3 = "Shift+MOUSE_BTN3",		--å°ãƒœãƒªãƒ¥ãƒ¼ãƒ ã‚¢ãƒƒãƒ—ï¼ˆshiftæŠ¼ã—ãªãŒã‚‰ãƒ›ã‚¤ãƒ¼ãƒ«â†‘ï¼‰
-kvoldown3 = "Shift+MOUSE_BTN4",		--å°ãƒœãƒªãƒ¥ãƒ¼ãƒ ãƒ€ã‚¦ãƒ³ï¼ˆshiftæŠ¼ã—ãªãŒã‚‰ãƒ›ã‚¤ãƒ¼ãƒ«â†“ï¼‰
-kpanleft = "Ctrl+Left",			--éŸ³å£°ã‚’å·¦ã®ã¿ã«ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰â†ï¼‰
-kpanright = "Ctrl+Right",		--éŸ³å£°ã‚’å³ã®ã¿ã«ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰â†’ï¼‰
-kpancenter = "Ctrl+Up",			--éŸ³å£°ã‚’ãƒ¢ãƒãƒ©ãƒ«ã«ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰â†‘ï¼‰
-kpanstereo = "Ctrl+Down",		--éŸ³å£°ã‚’æ™®é€šã®ã‚¹ãƒ†ãƒ¬ã‚ªã«ï¼ˆctrlæŠ¼ã—ãªãŒã‚‰â†“ï¼‰
-kmute = "MOUSE_BTN1",			--ãƒŸãƒ¥ãƒ¼ãƒˆï¼ˆãƒã‚¦ã‚¹ä¸­ã‚¯ãƒªãƒƒã‚¯ï¼‰
+--ƒL[ƒoƒCƒ“ƒh				--ij“à‚ÍƒfƒtƒHƒ‹ƒg
+--‰¹ŠÖŒW
+kvolup = "Up",				--ƒ{ƒŠƒ…[ƒ€ƒAƒbƒviªƒL[j
+kvoldown = "Down",			--ƒ{ƒŠƒ…[ƒ€ƒ_ƒEƒ“i«ƒL[j
+kvolup_wheel = "MOUSE_BTN3",		--ƒ{ƒŠƒ…[ƒ€ƒAƒbƒv2‚Â‚ßiƒzƒC[ƒ‹ªj
+kvoldown_wheel = "MOUSE_BTN4",		--ƒ{ƒŠƒ…[ƒ€ƒ_ƒEƒ“2‚Â‚ßiƒzƒC[ƒ‹«j
+kvolup2 = "Ctrl+MOUSE_BTN3",		--’†ƒ{ƒŠƒ…[ƒ€ƒAƒbƒvictrl‰Ÿ‚µ‚È‚ª‚çƒzƒC[ƒ‹ªj
+kvoldown2 = "Ctrl+MOUSE_BTN4",		--’†ƒ{ƒŠƒ…[ƒ€ƒ_ƒEƒ“ictrl‰Ÿ‚µ‚È‚ª‚çƒzƒC[ƒ‹«j
+kvolup3 = "Shift+MOUSE_BTN3",		--¬ƒ{ƒŠƒ…[ƒ€ƒAƒbƒvishift‰Ÿ‚µ‚È‚ª‚çƒzƒC[ƒ‹ªj
+kvoldown3 = "Shift+MOUSE_BTN4",		--¬ƒ{ƒŠƒ…[ƒ€ƒ_ƒEƒ“ishift‰Ÿ‚µ‚È‚ª‚çƒzƒC[ƒ‹«j
+kpanleft = "Ctrl+Left",			--‰¹º‚ğ¶‚Ì‚İ‚Éictrl‰Ÿ‚µ‚È‚ª‚ç©j
+kpanright = "Ctrl+Right",		--‰¹º‚ğ‰E‚Ì‚İ‚Éictrl‰Ÿ‚µ‚È‚ª‚ç¨j
+kpancenter = "Ctrl+Up",			--‰¹º‚ğƒ‚ƒmƒ‰ƒ‹‚Éictrl‰Ÿ‚µ‚È‚ª‚çªj
+kpanstereo = "Ctrl+Down",		--‰¹º‚ğ•’Ê‚ÌƒXƒeƒŒƒI‚Éictrl‰Ÿ‚µ‚È‚ª‚ç«j
+kmute = "MOUSE_BTN1",			--ƒ~ƒ…[ƒgiƒ}ƒEƒX’†ƒNƒŠƒbƒNj
 
---ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®çŠ¶æ…‹
-kminimize = "PGUP",			--æœ€å°åŒ–ã®ã‚ˆã†ãªã‚‚ã®ï¼ˆpageupï¼‰
-kfullscreen = "Alt+Enter",		--ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ï¼ˆaltæŠ¼ã—ãªãŒã‚‰enterï¼‰
-kfullscreen2 = "MOUSE_BTN0_DBL",	--ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³2ã¤ã‚ï¼ˆå·¦ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯ï¼‰
-kstatusbar = "Enter",			--ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼è¡¨ç¤ºéè¡¨ç¤ºï¼ˆenterï¼‰
-kminmute = "PGDWN",			--æœ€å°åŒ–ã®ã‚ˆã†ãªã‚‚ã®ã¨åŒæ™‚ã«ãƒŸãƒ¥ãƒ¼ãƒˆï¼ˆpagedownï¼‰
-kexit = "Esc",				--çµ‚äº†ï¼ˆescapeï¼‰
-kontop = "t",				--æœ€å‰é¢è¡¨ç¤ºï¼ˆtï¼‰
-kosc = "Ins",				--oscã‚ªãƒ³ã‚ªãƒ•ï¼ˆinsertï¼‰
+--ƒvƒŒƒCƒ„[‚Ìó‘Ô
+kminimize = "PGUP",			--Å¬‰»‚Ì‚æ‚¤‚È‚à‚Ìipageupj
+kfullscreen = "Alt+Enter",		--ƒtƒ‹ƒXƒNƒŠ[ƒ“ialt‰Ÿ‚µ‚È‚ª‚çenterj
+kfullscreen2 = "MOUSE_BTN0_DBL",	--ƒtƒ‹ƒXƒNƒŠ[ƒ“2‚Â‚ßi¶ƒ_ƒuƒ‹ƒNƒŠƒbƒNj
+kstatusbar = "Enter",			--ƒ^ƒCƒgƒ‹ƒo[•\¦”ñ•\¦ienterj
+kminmute = "PGDWN",			--Å¬‰»‚Ì‚æ‚¤‚È‚à‚Ì‚Æ“¯‚Éƒ~ƒ…[ƒgipagedownj
+kexit = "Esc",				--I—¹iescapej
+kontop = "t",				--Å‘O–Ê•\¦itj
+kosc = "Ins",				--oscƒIƒ“ƒIƒtiinsertj
 
---ãƒªãƒ¬ãƒ¼æ“ä½œ
-kstop = "Alt+x",			--ãƒªãƒ¬ãƒ¼åˆ‡æ–­ï¼ˆaltæŠ¼ã—ãªãŒã‚‰xï¼‰
-kbump = "Alt+b",			--ãƒªãƒ¬ãƒ¼å†æ¥ç¶šï¼ˆaltæŠ¼ã—ãªãŒã‚‰bï¼‰
-kbump2 = "z",				--ãƒªãƒ¬ãƒ¼å†æ¥ç¶š2ã¤ã‚ï¼ˆzï¼‰
+--ƒŠƒŒ[‘€ì
+kstop = "Alt+x",			--ƒŠƒŒ[Ø’fialt‰Ÿ‚µ‚È‚ª‚çxj
+kbump = "Alt+b",			--ƒŠƒŒ[ÄÚ‘±ialt‰Ÿ‚µ‚È‚ª‚çbj
+kbump2 = "z",				--ƒŠƒŒ[ÄÚ‘±2‚Â‚ßizj
 
---ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚·ãƒ§ãƒƒãƒˆã¨ã‹
-kscreenshot = "p",			--ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚·ãƒ§ãƒƒãƒˆã‚­ãƒ¼ï¼ˆpï¼‰
-krecord = "r",				--éŒ²ç”»é–‹å§‹ã¨çµ‚äº†ï¼ˆrï¼‰
+--ƒXƒNƒŠ[ƒ“ƒVƒ‡ƒbƒg‚Æ‚©
+kscreenshot = "p",			--ƒXƒNƒŠ[ƒ“ƒVƒ‡ƒbƒgƒL[ipj
 
 
---ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºå¤‰æ›´
---ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚ºåŸºæº–
+--ƒEƒBƒ“ƒhƒEƒTƒCƒY•ÏX
+--ƒEƒBƒ“ƒhƒEƒTƒCƒYŠî€
 k160x120 = "Alt+1",
 k320x240 = "Alt+2",
 k480x360 = "Alt+3",
@@ -74,7 +71,7 @@ k800x600 = "Alt+5",
 k1280x960 = "Alt+6",
 k1600x1200 = "Alt+7",
 k1920x1440 = "Alt+8",
---å‹•ç”»ã‚µã‚¤ã‚ºåŸºæº–
+--“®‰æƒTƒCƒYŠî€
 k50 = "1",
 k75 = "2",
 k100 = "3",
@@ -89,7 +86,7 @@ k25 = "8",
 
 
 
---ã“ã“ã‹ã‚‰ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®å‡¦ç†ã‚³ãƒ¼ãƒ‰
+--‚±‚±‚©‚çƒXƒNƒŠƒvƒg‚Ìˆ—ƒR[ƒh
 }
 
 mp.set_property("options/softvol", "yes" )
@@ -124,12 +121,6 @@ elseif	string.sub(ssdir,string.len(s.ssdir)) ~= "\\" then
 end
 mp.set_property("options/screenshot-template", s.ssdir.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
 
-if	s.recdir == "" then s.recdir = getsavdir("Videos")
-elseif	string.sub(s.recdir,string.len(s.recdir)) ~= "\\" then
-	s.recdir = s.recdir.."\\"	
-end
-
-
 function errorproof(case)
 	if 	case == "path" then
 		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
@@ -153,10 +144,10 @@ function errorproof(case)
 end
 
 
---ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±å–å¾—
+--ƒtƒ@ƒCƒ‹î•ñæ“¾
 local orgwidth,orgheight,orgsize
 function getorgsize()
-		--å‹•ç”»ã‚µã‚¤ã‚ºå–å¾—
+		--“®‰æƒTƒCƒYæ“¾
 		orgwidth  = mp.get_property("width", 0)
 		orgheight = mp.get_property("height", 0)
 		orgsize = string.format("%d",orgwidth).."x"..string.format("%d",orgheight)
@@ -169,7 +160,7 @@ function delay(sec,command1,command2,command3)
 end
 
 function applysettings()
-		--ã¯ã˜ã‚ã®è¨­å®šã‚’é©ç”¨ã™ã‚‹
+		--‚Í‚¶‚ß‚Ìİ’è‚ğ“K—p‚·‚é
 		if	errorproof("firststart") and errorproof("path") then
 			local osc = mp.get_property("options/osc")
 			if 	s.iosc == 1 then
@@ -228,43 +219,23 @@ mp.register_event("file-loaded",initialmute)
 
 function refresh()
 	if	errorproof("path") then
-		local streampath,localhost,streamid = getpath()
-		mp.commandv("stop")
-		mp.commandv("loadfile", streampath)
-		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append") end
-		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
+		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
+--		local streampath,localhost,streamid = getpath()
+--		mp.commandv("stop")
+--		mp.commandv("loadfile", streampath)
+--		for i = 0 , 2 do mp.commandv("loadfile", streampath , "append") end
+--		mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=bump&id=".. streamid,"append")
 	end
 end
 
-function record()
-	if	errorproof("path") and errorproof("playing") then
-		if	mp.get_property("stream-capture") == "" then
-			local date = os.date("%y%m%d_%H%M%S")
-			if	s.recsubdir == 1 then
---				io.open(ssdir.."%{media-title}\\","w")
-				s.recdir = s.recdir ..mp.get_property("media-title").."\\"
-				os.execute("mkdir ".."\""..s.recdir.."\"")
-				s.recsubdir = 0
-			end
-			refresh()
-			mp.set_property("stream-capture", s.recdir..mp.get_property("media-title").."_"..date.."."..mp.get_property("file-format"))
-			mp.osd_message("record start",3)
-		else	mp.set_property("stream-capture" , "" )
-			mp.osd_message("record stop",3)
-		end
-	end
-end
-mp.add_key_binding(s.krecord,"record" , record)
-	
-
---ç”»é¢ã‚µã‚¤ã‚ºå¤‰æ›´ç”¨
+--‰æ–ÊƒTƒCƒY•ÏX—p
 function changewindowsize(newwidth , newheight , kurobuti)
 	mp.set_property("vf","scale=" .. math.floor(newwidth) ..":"..math.floor(newheight) )
 	mp.set_property_number("window-scale" , 1)
 	mp.set_property("vf","dsize=".. orgwidth .. ":".. orgheight)
 end
 
---URLå–å¾—ã¨åˆ†å‰²
+--URLæ“¾‚Æ•ªŠ„
 function getpath()
     local fullpath = mp.get_property("path")
     local id = {string.find(fullpath,"/stream/(%x*)")}
@@ -275,13 +246,13 @@ function getpath()
     return fullpath,a[2],id[3]
 end
 
---oscåˆ‡ã‚Šæ›¿ãˆ
+--oscØ‚è‘Ö‚¦
 function osc()
 	mp.commandv("script_message", "osc-visibility","cycle")
 end
 mp.add_forced_key_binding(s.kosc, "osc", osc)
 
---ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚·ãƒ§ãƒƒãƒˆ
+--ƒXƒNƒŠ[ƒ“ƒVƒ‡ƒbƒg
 function screenshot()
 	if 	errorproof("playing") then
 		if	s.sssubdir == 1 then
@@ -307,7 +278,7 @@ function volmessage()
 	mp.osd_message(vol)
 end
 
---ãƒœãƒªãƒ¥ãƒ¼ãƒ ä¸Šã’ã‚‹
+--ƒ{ƒŠƒ…[ƒ€ã‚°‚é
 function gainvolume()
 	mp.commandv("add", "volume", s.volume)
 	volmessage()
@@ -328,7 +299,7 @@ end
 mp.add_key_binding("Shift+Up", "sgainvolume", sgainvolume)
 mp.add_key_binding(s.kvolup3, "sgainvolume_wheel", sgainvolume)
 
---ãƒœãƒªãƒ¥ãƒ¼ãƒ ä¸‹ã’ã‚‹
+--ƒ{ƒŠƒ…[ƒ€‰º‚°‚é
 function reducevolume()
 	mp.commandv("add", "volume", -1 * s.volume)
 	volmessage()
@@ -349,7 +320,7 @@ end
 mp.add_key_binding("Shift+Down", "sreducevolume", sreducevolume)
 mp.add_key_binding(s.kvoldown3, "sreducevolume_wheel", sreducevolume)
 
---ãƒŸãƒ¥ãƒ¼ãƒˆ
+--ƒ~ƒ…[ƒg
 function mute()
 	if	errorproof("playing")	then
 		mp.commandv("cycle", "mute")
@@ -361,7 +332,7 @@ function mute()
 end
 mp.add_key_binding( s.kmute, "mute", mute)
 
---éŸ³å£°ã‚’å·¦ã®ã¿ã«
+--‰¹º‚ğ¶‚Ì‚İ‚É
 function panleft()
 	if 	mp.get_property_number("audio-channels",0) == 1 then
 		mp.set_property("af", "pan=2:[ 1 , 0 ]")
@@ -371,7 +342,7 @@ function panleft()
 end
 mp.add_key_binding(s.kpanleft, "panleft", panleft)
 
---éŸ³å£°ã‚’å³ã®ã¿ã«
+--‰¹º‚ğ‰E‚Ì‚İ‚É
 function panright()
 	if	mp.get_property_number("audio-channels",0) == 1 then
 		mp.set_property("af", "pan=2:[ 1 , 1 ]") 
@@ -381,40 +352,40 @@ function panright()
 end
 mp.add_key_binding(s.kpanright, "panright", panright)
 
---éŸ³å£°ã‚’ä¸­å¤®ï¼ˆãƒ¢ãƒãƒ©ãƒ«ï¼‰ã«
+--‰¹º‚ğ’†‰›iƒ‚ƒmƒ‰ƒ‹j‚É
 function pancenter()
 	mp.set_property("af", "pan=1:[ 1 , 1 ]")
 	mp.osd_message("mono")
 end
 mp.add_key_binding(s.kpancenter, "pancenter", pancenter)
 
---éŸ³å£°ã‚’æ™®é€šã®ã‚¹ãƒ†ãƒ¬ã‚ªã«
+--‰¹º‚ğ•’Ê‚ÌƒXƒeƒŒƒI‚É
 function panrestore()
 	mp.set_property("af", "channels=2")
 	mp.osd_message("stereo")
 end
 mp.add_key_binding(s.kpanstereo, "panrestore", panrestore)
 
---ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³
+--ƒtƒ‹ƒXƒNƒŠ[ƒ“
 function fullscreen()
 	mp.commandv("cycle" , "fullscreen")
 end
 mp.add_key_binding(s.kfullscreen, "fullscreen", fullscreen)
 mp.add_key_binding(s.kfullscreen2, "fullscreen2", fullscreen)
 
---çµ‚äº†
+--I—¹
 function exit()
 	mp.commandv("quit")
 end
 mp.add_key_binding(s.kexit, "exit", exit)
 
---ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒãƒ¼ã®ä»£ã‚ã‚Š
+--ƒXƒe[ƒ^ƒXƒo[‚Ì‘ã‚í‚è
 function titlebar()
 	mp.commandv("cycle" , "border")
 end
 mp.add_key_binding(s.kstatusbar, "titlebar", titlebar)
 
---æœ€å‰é¢è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
+--Å‘O–Ê•\¦Ø‚è‘Ö‚¦
 function ontop()
 	mp.commandv("cycle", "ontop")
 	if	mp.get_property_bool("ontop")	then
@@ -424,7 +395,7 @@ function ontop()
 end
 mp.add_key_binding(s.kontop, "ontop", ontop)
 
---ãƒªãƒ¬ãƒ¼å†æ¥ç¶š
+--ƒŠƒŒ[ÄÚ‘±
 function bump()
 	if	errorproof("path") and bumpt == nil then
 		local streampath,localhost,streamid = getpath()
@@ -445,7 +416,7 @@ end
 mp.add_key_binding(s.kbump, "bump" , bump)
 mp.add_key_binding(s.kbump2, "bump2" , bump)
 
---ãƒªãƒ¬ãƒ¼åˆ‡æ–­
+--ƒŠƒŒ[Ø’f
 function stop()
 	if 	errorproof("path") then
 		local streampath,localhost,streamid = getpath()
@@ -454,7 +425,7 @@ function stop()
 end
 mp.add_key_binding(s.kstop, "stop" , stop)
 
---ã“ã“ã‹ã‚‰windowã‚µã‚¤ã‚ºå¤‰æ›´
+--‚±‚±‚©‚çwindowƒTƒCƒY•ÏX
 
 videosize = {
 	to160 = {160,120},

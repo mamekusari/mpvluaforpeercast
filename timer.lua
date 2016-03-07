@@ -1,20 +1,20 @@
 local m={
---ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ç”¨æƒ…å ±å–å¾—ã‚¿ã‚¤ãƒãƒ¼ã®luaã€‚0ã§éè¡¨ç¤ºã¾ãŸã¯ç„¡åŠ¹ã«ãªã‚Šã¾ã™
+--ƒ^ƒCƒgƒ‹ƒo[—pî•ñæ“¾ƒ^ƒCƒ}[‚ÌluaB0‚Å”ñ•\¦‚Ü‚½‚Í–³Œø‚É‚È‚è‚Ü‚·
 
---ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹è¡¨ç¤ºã¨ã‹
-showtype = 1,				--ãƒ“ãƒ‡ã‚ªã‚³ãƒ¼ãƒ‡ãƒƒã‚¯ã€Œ1ã€ã‹ã‚³ãƒ³ãƒ†ãƒŠè¡¨ç¤ºã€Œ2ã€ã€‚ã€Œ3ã€ã§éŸ³å£°ã‚³ãƒ¼ãƒ‡ãƒƒã‚¯
-showsize = 3,				--è§£åƒåº¦ã‚’è¡¨ç¤ºã€‚ã€Œ2ã€ã¯ä»Šã®ã‚µã‚¤ã‚ºã®ã¿ã€ã€Œ3ã€ã¯ã‚½ãƒ¼ã‚¹ã‚µã‚¤ã‚ºã®ã¿è¡¨ç¤º
-showbitrate = 1,			--ã‚­ãƒ¼ãƒ•ãƒ¬ãƒ¼ãƒ é–“ã®ãƒ“ãƒƒãƒˆãƒ¬ãƒ¼ãƒˆè¡¨ç¤ºã€‚
-showfps = 1,				--fpsè¡¨ç¤ºã€‚ã€Œ2ã€ã¯ä»Šã®fpsã®ã¿ã€ã€Œ3ã€ã¯å‹•ç”»ã§è¨­å®šã•ã‚ŒãŸfpsã®ã¿è¡¨ç¤º
-showcache = 1,				--å¤§ä½“ã®ãƒãƒƒãƒ•ã‚¡ã‚µã‚¤ã‚ºã‚’è¡¨ç¤ºã€‚ã€Œ2ã€ã§demux+cacheã®æ­£ç¢ºãªè¡¨ç¤º
-showplaytime = 1,			--å†ç”Ÿæ™‚é–“ï¼ˆãŸã¾ã«ç·é…ä¿¡æ™‚é–“ï¼‰ã‚’è¡¨ç¤º
-showprotocol = 0,			--flvã®æ™‚ã«httpã‹rtmpã‹ã‚’è¡¨ç¤º
-enablertmp = 0,				--flvã®æ™‚ã«ã€ã€Œ1ã€ã¯åˆã‚ã¯rtmpã§å†ç”Ÿã™ã‚‹ã€‚ã€Œ2ã€ã§ã™ã¹ã¦rtmpã§å†ç”Ÿã™ã‚‹
-enableautospeed = 1,			--ã‚­ãƒ£ãƒƒã‚·ãƒ¥é‡ã®è‡ªå‹•èª¿æ•´ã€‚ã€Œ2ã€ã§ãŸã¾ã£ãŸã¨ãã ã‘èª¿æ•´ã€ã€Œ0ã€ã§ç„¡åŠ¹
-enableothers = 1,			--peercastä»¥å¤–ã§ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’é©ç”¨ã™ã‚‹ã‹
+--ƒXƒe[ƒ^ƒX•\¦‚Æ‚©
+showtype = 3,				--ƒrƒfƒIƒR[ƒfƒbƒNu1v‚©ƒRƒ“ƒeƒi•\¦u2vBu3v‚Å‰¹ºƒR[ƒfƒbƒN
+showsize = 3,				--‰ğ‘œ“x‚ğ•\¦Bu2v‚Í¡‚ÌƒTƒCƒY‚Ì‚İAu3v‚Íƒ\[ƒXƒTƒCƒY‚Ì‚İ•\¦
+showbitrate = 1,			--ƒL[ƒtƒŒ[ƒ€ŠÔ‚ÌƒrƒbƒgƒŒ[ƒg•\¦B
+showfps = 1,				--fps•\¦Bu2v‚Í¡‚Ìfps‚Ì‚İAu3v‚Í“®‰æ‚Åİ’è‚³‚ê‚½fps‚Ì‚İ•\¦
+showcache = 1,				--‘å‘Ì‚Ìƒoƒbƒtƒ@ƒTƒCƒY‚ğ•\¦Bu2v‚Ådemux+cache‚Ì³Šm‚È•\¦
+showplaytime = 1,			--Ä¶ŠÔi‚½‚Ü‚É‘”zMŠÔj‚ğ•\¦
+showprotocol = 0,			--flv‚Ì‚Éhttp‚©rtmp‚©‚ğ•\¦
+enablertmp = 0,				--flv‚Ì‚ÉAu1v‚Í‰‚ß‚Írtmp‚ÅÄ¶‚·‚éBu2v‚Å‚·‚×‚Ärtmp‚ÅÄ¶‚·‚é
+enableautospeed = 1,			--ƒLƒƒƒbƒVƒ…—Ê‚Ì©“®’²®Bu2v‚Å‚½‚Ü‚Á‚½‚Æ‚«‚¾‚¯’²®Au0v‚Å–³Œø
+enableothers = 1,			--peercastˆÈŠO‚Å‚±‚ÌƒXƒNƒŠƒvƒg‚ğ“K—p‚·‚é‚©
 
 
---è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆç”¨ã‚­ãƒ¼ãƒã‚¤ãƒ³ãƒ‰
+--•\¦Ø‚è‘Ö‚¦—pƒL[ƒoƒCƒ“ƒh
 ktype = 	"ctrl+1",
 ksize =		"ctrl+2",
 kbitrate = 	"ctrl+3",
@@ -25,28 +25,28 @@ kprotocol =	"ctrl+9",
 kautospeed = 	"ctrl+0",
 
 
---ã“ã“ã‹ã‚‰ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®å‡¦ç†ã‚³ãƒ¼ãƒ‰
+--‚±‚±‚©‚çƒXƒNƒŠƒvƒg‚Ìˆ—ƒR[ƒh
 }
 local s = {
-	offsetsec = 50,			--ä½•ç§’ã§1ç§’åˆ†ã®ãƒãƒƒãƒ•ã‚¡ã‚’ç›¸æ®ºã™ã‚‹ã‹(50ç§’)
-	recsec = 4,			--æ•°å€¤ã®ç§’ã”ã¨ã«ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’å†æ¥ç¶šã™ã‚‹(4ç§’)
-	incpossec = 10,			--æ•°å€¤ã®ç§’ã”ã¨ã«ãƒ—ãƒ¬ã‚¤ãƒªã‚¹ãƒˆã‚’1ã¤é€ã‚‹(10ç§’)
-	decpossec = 5,			--ãƒ—ãƒ¬ã‚¤ãƒªã‚¹ãƒˆã‚’é€ã£ãŸå¾Œã«ã“ã®ç§’æ•°åˆ†ã®ã‚«ã‚¦ãƒ³ãƒˆã‚’å¢—ã‚„ã™(5ç§’åˆ†)
-	bumpsec = 40,			--ã“ã‚Œä»¥ä¸ŠãŸã¾ã‚‹ã¨ãƒªãƒ¬ãƒ¼ã‚’å†æ¥ç¶šã™ã‚‹(40ç§’)
+	offsetsec = 50,			--‰½•b‚Å1•b•ª‚Ìƒoƒbƒtƒ@‚ğ‘ŠE‚·‚é‚©(50•b)
+	recsec = 4,			--”’l‚Ì•b‚²‚Æ‚ÉƒvƒŒƒCƒ„[‚ğÄÚ‘±‚·‚é(4•b)
+	incpossec = 10,			--”’l‚Ì•b‚²‚Æ‚ÉƒvƒŒƒCƒŠƒXƒg‚ğ1‚Â‘—‚é(10•b)
+	decpossec = 5,			--ƒvƒŒƒCƒŠƒXƒg‚ğ‘—‚Á‚½Œã‚É‚±‚Ì•b”•ª’Ç‰Á‚·‚é(5•b•ª)
+	bumpsec = 40,			--‚±‚êˆÈã‚½‚Ü‚é‚ÆƒŠƒŒ[‚ğÄÚ‘±‚·‚é(40•b)
 	
-	playlistcount = 4,		--ãƒ—ãƒ¬ã‚¤ãƒªã‚¹ãƒˆã®æ•°ã§ã€ã“ã®æ¬¡ã«bumpãŒãã‚‹(4ã¤)
+	playlistcount = 4,		--ƒvƒŒƒCƒŠƒXƒg‚Ì”‚ÅA‚±‚ÌŸ‚Ébump‚ª‚­‚é(4‚Â)
 	
-	limitavsync = 0.5,		--éŸ³ã‚ºãƒ¬ã‚’ä½•ç§’ã¾ã§è¨±å®¹ã™ã‚‹ã‹(0.5ç§’)
-	limitct = 2,			--éŸ³ã‚ºãƒ¬ä¿®æ­£é‡ã‚’ä½•ç§’ã¾ã§è¨±å®¹ã™ã‚‹ã‹(2ç§’)
+	limitavsync = 0.5,		--‰¹ƒYƒŒ‚ğ‰½•b‚Ü‚Å‹–—e‚·‚é‚©(0.5•b)
+	limitct = 2,			--‰¹ƒYƒŒC³—Ê‚ğ‰½•b‚Ü‚Å‹–—e‚·‚é‚©(2•b)
 	
-	high = 10,   			--ã“ã‚Œä»¥ä¸Šãƒãƒƒãƒ•ã‚¡ãŒè²¯ã¾ã£ãŸã‚‰æ—©é€ã‚Šé–‹å§‹(10ç§’)
-	low = 1.2,   			--ã“ã‚Œä»¥ä¸‹ã«ãªã£ãŸã‚‰é…ãã™ã‚‹(1.2ç§’)
-	normal1 = 2,			--é…ãã—ã¦2ç§’åˆ†ãŸã¾ã£ãŸã‚‰æ™®é€šã®é€Ÿåº¦ã«æˆ»ã™(2ç§’)
-	normal2 = 3,			--æ—©ãã—ã¦3ç§’åˆ†ã«ãªã£ãŸã‚‰æ™®é€šã®é€Ÿåº¦ã«æˆ»ã™(3ç§’)
-	lowspeed = 0.95,	 	--é…ãã—ãŸã¨ãã®å†ç”Ÿé€Ÿåº¦(0.95å€)
-	highspeed = 1.10,   		--é€Ÿãã—ãŸã¨ãã®å†ç”Ÿé€Ÿåº¦(1.10å€)
-	persec = 0.01,			--ãƒãƒƒãƒ•ã‚¡ã®ç§’æ•°ã«ã“ã‚Œã‚’ã‹ã‘ãŸåˆ†ã‚’è¶³ã™(+0.01)
-	maxspeed = 2,			--é€Ÿåº¦ã®ä¸Šé™(2å€)
+	high = 10,   			--‚±‚êˆÈãƒoƒbƒtƒ@‚ª’™‚Ü‚Á‚½‚ç‘‘—‚èŠJn(10•b)
+	low = 1.2,   			--‚±‚êˆÈ‰º‚É‚È‚Á‚½‚ç’x‚­‚·‚é(1.2•b)
+	normal1 = 2,			--’x‚­‚µ‚Ä2•b•ª‚½‚Ü‚Á‚½‚ç•’Ê‚Ì‘¬“x‚É–ß‚·(2•b)
+	normal2 = 3,			--‘‚­‚µ‚Ä3•b•ª‚É‚È‚Á‚½‚ç•’Ê‚Ì‘¬“x‚É–ß‚·(3•b)
+	lowspeed = 0.95,	 	--’x‚­‚µ‚½‚Æ‚«‚ÌÄ¶‘¬“x(0.95”{)
+	highspeed = 1.10,   		--‘¬‚­‚µ‚½‚Æ‚«‚ÌÄ¶‘¬“x(1.10”{)
+	persec = 0.01,			--ƒoƒbƒtƒ@‚Ì•b”‚É‚±‚ê‚ğ‚©‚¯‚½•ª‚ğ‘«‚·(+0.01)
+	maxspeed = 2,			--‘¬“x‚ÌãŒÀ(2”{)
 
 }
 
@@ -124,8 +124,7 @@ playlist = {
 			end
 			bump.addurl()
 		end
-		
-}		
+}
 
 bump = {
 	geturl = function()
@@ -139,13 +138,13 @@ bump = {
 		local playlistcount = mp.get_property_number("playlist-count",0)
 		local bumpurl
 		local i = 0
-		repeat bumpurl = string.find(mp.get_property("playlist/".. i .."/filename",""), "/admin??cmd=")
+		repeat bumpurl = string.find(mp.get_property("playlist/".. i .."/filename"), "/admin??cmd=bump")
 			i = i + 1
 			until bumpurl  or playlistcount < i
 		if	playlistcount < i then
 			i = "no bump url"
 		end
-		return i,playlistcount,mp.get_property_number("playlist-pos",0)+1 --0ã¯å…¥ã‚Œã¦ãªã„
+		return i,playlistcount,mp.get_property_number("playlist-pos",0)+1 --1‚©‚ç”‚¦‚é
 		
 	end,
 	t = function()
@@ -153,12 +152,12 @@ bump = {
 		if	bumppos > currentpos then
 			for i = currentpos , bumppos - 1 do
 				mp.commandv("playlist-next")
-				print(i)
+			--	print(i)
 			end
 		else
 			for i = bumppos , playlistcount - currentpos + bumppos + 1 do
 				mp.commandv("playlist-next")
-				print(i)
+			--	print(i)
 			end
 		end
 		mp.osd_message("bump",3)
@@ -217,7 +216,7 @@ end
 mp.observe_property("total-avsync-change", "number", ct)
 
 get = {
-	--URLå–å¾—ã¨åˆ†å‰²
+	--URLæ“¾‚Æ•ªŠ„
 	path = function()
 	    local fullpath = mp.get_property("playlist/0/filename","")
 		if	string.find(fullpath,"admin??cmd=") then
@@ -236,7 +235,7 @@ get = {
 	    return fullpath,a[2],id[3]
 	end,
 
-	--mp.get_property("stream-pos")ã¯ä¸å®‰å®šã‚‰ã—ã„ã‹ã‚‰ã“ã‚Œã¯ä½¿ãˆãªã„
+	--mp.get_property("stream-pos")‚Í•sˆÀ’è‚ç‚µ‚¢‚©‚ç‚±‚ê‚Íg‚¦‚È‚¢
 	streampos = function ()
 		local streampos
 		print("1")
@@ -248,9 +247,9 @@ get = {
 		return streampos
 	end,
 
-	--ãƒ“ãƒƒãƒˆãƒ¬ãƒ¼ãƒˆå–å¾—
+	--ƒrƒbƒgƒŒ[ƒgæ“¾
 	bitrate = function()
-		--ã‚­ãƒ¼ãƒ•ãƒ¬ãƒ¼ãƒ é–“ã®ãƒ“ãƒƒãƒˆãƒ¬ãƒ¼ãƒˆã‚’è¨ˆæ¸¬ã™ã‚‹æ–¹æ³•
+		--ƒL[ƒtƒŒ[ƒ€ŠÔ‚ÌƒrƒbƒgƒŒ[ƒg‚ğŒv‘ª‚·‚é•û–@
 		local pvrate = mp.get_property("packet-video-bitrate", 0)
 		local parate = mp.get_property("packet-audio-bitrate", 0)
 
@@ -261,20 +260,20 @@ get = {
 		else
 			brate = vrate + arate
 		end
-		--ã‚¹ãƒˆãƒªãƒ¼ãƒ ã®ãƒ‡ãƒ¼ã‚¿é‡ã‹ã‚‰ãƒ“ãƒƒãƒˆãƒ¬ãƒ¼ãƒˆã‚’è¨ˆç®—ã™ã‚‹æ–¹æ³•
+		--ƒXƒgƒŠ[ƒ€‚Ìƒf[ƒ^—Ê‚©‚çƒrƒbƒgƒŒ[ƒg‚ğŒvZ‚·‚é•û–@
 	--	local streampos = get.streampos()
 	--		if 	srate == nil or srate == 0 then 
 	--			srate = streampos
 	--			brate = srate /1024 * 8
 	--		else
-	--			--mkvä»¥å¤–ãã¡ã‚“ã¨1ç§’å¹³å‡ã¨ã‚Œãªã„ã‚ˆã†ã ã‹ã‚‰2ã§å‰²ã£ã¦ã¿ãŸ
+	--			--mkvˆÈŠO‚«‚¿‚ñ‚Æ1•b•½‹Ï‚Æ‚ê‚È‚¢‚æ‚¤‚¾‚©‚ç2‚ÅŠ„‚Á‚Ä‚İ‚½
 	--			brate = (brate + (streampos - srate) /1024 * 8)/2
 	--			srate = streampos
 	--		end
 		return brate
 	end,
 
-	--ã‚­ãƒ£ãƒƒã‚·ãƒ¥å–å¾—
+	--ƒLƒƒƒbƒVƒ…æ“¾
 	cache = function()
 		local cache,demux,sec
 		cache = mp.get_property_number("cache-used", 0)
@@ -286,7 +285,7 @@ get = {
 		return cache,demux,sec
 	end,
 
-	--è§£åƒåº¦å–å¾—
+	--‰ğ‘œ“xæ“¾
 	resolution = function(tateyoko)
 		if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
 		elseif tateyoko == "tateyoko" then 
@@ -332,13 +331,8 @@ get = {
 }
 
 tset = function(case)
-	--éŒ²ç”»ãƒã‚§ãƒƒã‚¯
-	if	case == "rec"	then
-		t.rec = mp.get_property("stream-capture","")
-		if 	t.rec ~= "" then t.rec = "rec"
-		end
-	--ãƒ“ãƒ‡ã‚ªã‚³ãƒ¼ãƒ‡ãƒƒã‚¯å–å¾—
-	elseif	case == "codec"	then
+	--ƒrƒfƒIƒR[ƒfƒbƒNæ“¾
+	if	case == "codec"	then
 		local video,audio,container
 		if	m.showtype ~= 0 then
 			video = get.codec("video")
@@ -352,7 +346,7 @@ tset = function(case)
 		else	t.type = ""
 		end
 --		return	t.type
-	--è§£åƒåº¦
+	--‰ğ‘œ“x
 	elseif	case == "size"	then
 		local size
 		if	m.showsize == 0 then size = ""
@@ -367,7 +361,7 @@ tset = function(case)
 			end
 		end
 		return	size
-	--ãƒ“ãƒƒãƒˆãƒ¬ãƒ¼ãƒˆ
+	--ƒrƒbƒgƒŒ[ƒg
 	elseif	case == "bitrate"	then
 		local rate
 		if	m.showbitrate == 0 then	rate = ""
@@ -383,7 +377,7 @@ tset = function(case)
 		end
 --		return	t.fps
 	elseif	case == "sort"	then
-	--ã†ã¾ãä¸¦ã¹ã‚‹æ–¹æ³•ãŒã‚ã‹ã‚‰ãªã„ã‹ã‚‰å…¨é€šã‚Šã”ã‚ŠæŠ¼ã—
+	--‚¤‚Ü‚­•À‚×‚é•û–@‚ª‚í‚©‚ç‚È‚¢‚©‚ç‘S’Ê‚è‚²‚è‰Ÿ‚µ
 		local rate = tset("bitrate")
 		local size = tset("size")
 		tset("fps")
@@ -411,7 +405,7 @@ tset = function(case)
 			end
 		end	
 --		return	t.info
-	--å†ç”Ÿæ™‚é–“
+	--Ä¶ŠÔ
 	elseif	case == "playtime"	then
 		if	m.showplaytime ~= 1 then t.time = ""
 		else	t.time = mp.get_property_osd("playback-time", 0)
@@ -421,12 +415,12 @@ tset = function(case)
 		elseif	mp.get_property_bool("pause") then
 			t.time = "pause"
 		end
-		--searchåˆ¤å®šã§ãã‚‹ã‹ã¨æ€ã£ãŸã‘ã©ã“ã‚Œã˜ã‚ƒã§ããªã„
+		--search”»’è‚Å‚«‚é‚©‚Æv‚Á‚½‚¯‚Ç‚±‚ê‚¶‚á‚Å‚«‚È‚¢
 		if	mp.get_property_bool("idle") then
 			t.time = "search"
 		end
 --		return	t.time
-	--ã‚­ãƒ£ãƒƒã‚·ãƒ¥
+	--ƒLƒƒƒbƒVƒ…
 	elseif	case == "cache"	then
 		local cache,demux,sec = get.cache()
 		if	sec ~= sec or get.bitrate() == 0 then sec = "-"
@@ -437,13 +431,13 @@ tset = function(case)
 		elseif	m.showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demux,cache)
 		end
 --		return	t.cache
-	--éŸ³é‡
+	--‰¹—Ê
 	elseif	case == "volume"	then
 		if	mp.get_property_bool("mute") then t.vol = " vol:-" 
 		else	t.vol =  string.format(" vol:%d", mp.get_property("volume", 0))
 		end
 --		return	t.vol
-	--ãƒ—ãƒ­ãƒˆã‚³ãƒ«
+	--ƒvƒƒgƒRƒ‹
 	elseif	case == "protocol"	then
 		if m.showprotocol == 1 then
 			if string.find(get.path(),"rtmp://") and mp.get_property("file-format","") == "flv" then
@@ -454,7 +448,7 @@ tset = function(case)
 		else	t.protocol = ""
 		end
 --		return	t.protocol
-	--å†ç”Ÿé€Ÿåº¦
+	--Ä¶‘¬“x
 	elseif	case == "speed"	then
 		if	mp.get_property_number("speed",0) ~= 1 then
 			t.speed = string.format(" x%3.2f",mp.get_property_number("speed"))
@@ -462,9 +456,8 @@ tset = function(case)
 			t.speed = ""
 		end
 --		return	t.speed
-	--ã¾ã¨ã‚ã¦ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã«è¡¨ç¤º
+	--‚Ü‚Æ‚ß‚Äƒ^ƒCƒgƒ‹ƒo[‚É•\¦
 	elseif	case == "display" then
-		tset("rec")
 		tset("protocol")
 		tset("codec")
 		tset("speed")
@@ -473,7 +466,6 @@ tset = function(case)
 		tset("playtime")
 		tset("volume")
 		t.barlist = (
-			t.rec..
 			t.protocol..
 			t.type ..
 			t.mediatitle..
@@ -600,7 +592,7 @@ mp.register_event("file-loaded", getorginfo.start)
 
 
 
---ã‚­ãƒ£ãƒƒã‚·ãƒ¥é‡ã‚’å†ç”Ÿã‚¹ãƒ”ãƒ¼ãƒ‰ã§èª¿æ•´
+--ƒLƒƒƒbƒVƒ…—Ê‚ğÄ¶ƒXƒs[ƒh‚Å’²®
 function autospeed()
 	if errorproof("playing")
 	and brate ~= nil  
@@ -636,7 +628,7 @@ function autospeed()
 end
 
 function test()
-print(bump.pos())
+--print(bump.pos())
 --	mp.set_property("stream-pos" , 0 )
 --	print(mp.get_property("stream-capture"))
 --	print(mp.get_property("time-pos"))
@@ -655,7 +647,7 @@ print(bump.pos())
 --print(mp.get_property("monitorpixelaspect"))
 --print(mp.get_property("video-aspect"))
 --print(mp.get_property("options/osc"))
-print(mp.get_property("playlist"))
+--print(mp.get_property("playlist"))
 --print(mp.get_property_number("cache-used","none"))
 --print(mp.get_property_number("cache","cache"))
 --print(mp.get_property_number("cache-duration","duration"))
@@ -669,7 +661,7 @@ print(mp.get_property("playlist"))
 --print(mp.get_property_number("video-bitrate"))
 --mp.osd_message(mp.get_property("path"),5)
 --mp.osd_message(mp.get_property("path"),5)
-print(mp.get_property("playlist/0/filename"))
+--print(mp.get_property("playlist/0/filename"))
 --local f = io.open("test.txt", "r")
 --local a=io.open("testwrite.txt","w+")
 --for line in f:lines() do
@@ -679,13 +671,13 @@ print(mp.get_property("playlist/0/filename"))
 
 
 --f:close()
-bump.t()
+--bump.t()
 --mp.add_timeout(5,resetplaylist())
 end
 mp.add_key_binding("KP8", "test" , test)
 
 
---ãƒªãƒ¬ãƒ¼ãã®ã¾ã¾ã§é–‹ãç›´ã™
+--ƒŠƒŒ[‚»‚Ì‚Ü‚Ü‚ÅŠJ‚«’¼‚·
 function refresh()
 	if	errorproof("path") then
 		local streampath,localhost,streamid = getpath()
@@ -696,7 +688,7 @@ function refresh()
 end
 mp.add_key_binding("KP7","refresh",refresh)
 
---ã‚¿ã‚¤ãƒãƒ¼ã¨æœ€åˆã«æ­¢ã¾ã£ãŸã¾ã¾ã ã£ãŸæ™‚ã®å‡¦ç†
+--ƒ^ƒCƒ}[‚ÆÅ‰‚É~‚Ü‚Á‚½‚Ü‚Ü‚¾‚Á‚½‚Ìˆ—
 local count = 0
 mp.add_periodic_timer(1, (function()
 --function timer()
@@ -720,15 +712,15 @@ mp.add_periodic_timer(1, (function()
 	end
 end))
 
---æ—©ã‚ã«å†é–‹ã§ãã‚‹ã‚ˆã†ã«ã¨ã€å†ç”Ÿã¨åœæ­¢ã‚’ç¹°ã‚Šè¿”ã™ã¨ãã®å‡¦ç†
+--‘‚ß‚ÉÄŠJ‚Å‚«‚é‚æ‚¤‚É‚ÆAÄ¶‚Æ’â~‚ğŒJ‚è•Ô‚·‚Æ‚«‚Ìˆ—
 function reconnect()
 	local pos = mp.get_property_number("playlist-pos",0)
-	local inccount = 10					--æ­¢ã¾ã£ãŸæ™‚ã«1ç§’ã”ã¨ã«å¢—ãˆã‚‹æ•°
+	local inccount = 10					--~‚Ü‚Á‚½‚É1•b‚²‚Æ‚É‘‚¦‚é”
 	local reccount = s.recsec * inccount
 	local incposseccount = s.incpossec * inccount
 	local decposcount = math.abs(s.decpossec) * inccount
 	local deccount = -1 * inccount / s.offsetsec
-	local bumpcount = bumpsec * inccount
+	local bumpcount = s.bumpsec * inccount
 	
 	count = (math.modf(count*1000))/1000
 
