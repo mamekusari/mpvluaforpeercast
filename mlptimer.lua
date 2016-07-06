@@ -1,5 +1,6 @@
 require("mlpsettings")
 
+
 local videoinfo = {
 	fps = 0,
 	width = 0,
@@ -14,6 +15,7 @@ local currentinfo ={
 	fps = 0,
 	width = 0,
 	height = 0,
+	size = 0,
 	bitrate = 0,
 	title = "",
 	type = "",
@@ -76,56 +78,61 @@ function delay(sec,command1,command2,command3)
 end
 local apply = false
 function applysettings()
-		--はじめの設定を適用する
-		if	errorproof("firststart") and errorproof("path") and not apply then
-			local osc = mp.get_property("options/osc")
-			if 	mlpsettings.s.iosc == 1 then
-				if	osc == "no" then
-					mp.commandv("script_message","osc-visibility","cycle")
-				elseif	osc == "always" then
-					mp.commandv("script_message","osc-visibility","cycle")
-					delay(0.1,"script_message","osc-visibility","cycle")
-				end
-				mp.set_property("osc","yes")
-			elseif	mlpsettings.s.iosc == 2 then 
-				if	osc == "yes" then
+	--はじめの設定を適用する
+	if	errorproof("firststart") and errorproof("path") and not apply then
+		local osc = mp.get_property("options/osc")
+		local fontsize = mp.get_property("options/osd-font-size")
+	--	mp.set_property("options/osd-font-size","1")	--osc切り替えのosdを表示しないようにしたい
+		if 	mlpsettings.s.iosc == 1 then
+			if	osc == "no" then
 				mp.commandv("script_message","osc-visibility","cycle")
-				elseif	osc == "no" then
+			elseif	osc == "always" then
 				mp.commandv("script_message","osc-visibility","cycle")
 				delay(0.1,"script_message","osc-visibility","cycle")
-				end
-				mp.set_property("osc","yes")
-			else	
-				if	osc == "yes" then
-				mp.commandv("script_message","osc-visibility","cycle")
-				delay(0.1,"script_message","osc-visibility","cycle")
-				elseif	osc == "always" then
-				mp.commandv("script_message","osc-visibility","cycle")
-				end
-				mp.set_property("osc","no")
 			end
-			if	mlpsettings.s.istatusbar == 1 and mp.get_property("border") == "no" then
-				delay(0.1,"cycle","border")
-			elseif	mlpsettings.s.istatusbar == 0 and mp.get_property("border") == "yes" then
-				delay(0.1,"cycle","border")
+			mp.set_property("osc","yes")
+		elseif	mlpsettings.s.iosc == 2 then 
+			if	osc == "yes" then
+			mp.commandv("script_message","osc-visibility","cycle")
+			elseif	osc == "no" then
+			mp.commandv("script_message","osc-visibility","cycle")
+			delay(0.1,"script_message","osc-visibility","cycle")
 			end
-			if	mlpsettings.s.iontop == 1 and mp.get_property("ontop") == "no" then
-				delay(0.1,"cycle","ontop")
-			elseif	mlpsettings.s.iontop == 0 and mp.get_property("ontop") == "yes" then
-				delay(0.1,"cycle","ontop")
+			mp.set_property("osc","yes")
+		else	
+			if	osc == "yes" then
+			mp.commandv("script_message","osc-visibility","cycle")
+			delay(0.1,"script_message","osc-visibility","cycle")
+			elseif	osc == "always" then
+			mp.commandv("script_message","osc-visibility","cycle")
 			end
-			if	mlpsettings.s.iosd == 0 then
-				--mp.set_property("osd-level","0")
-				mp.set_property("options/osd-font-size","1")
-			--	print(mp.get_property("osd-level"))
-			end
-			mp.set_property("loop","yes")
-			mp.set_property("options/force-window", "immediate")
-			mp.set_property_number("options/demuxer-readahead-secs", 20)
-			mp.set_property_bool("rebase-start-time", false)
-		--	print("apply")
-			apply = true
+			mp.set_property("osc","no")
 		end
+		mp.set_property_number("options/osd-font-size",fontsize)
+		if	mlpsettings.s.istatusbar == 1 and mp.get_property("border") == "no" then
+			delay(0.1,"cycle","border")
+		elseif	mlpsettings.s.istatusbar == 0 and mp.get_property("border") == "yes" then
+			delay(0.1,"cycle","border")
+		end
+		if	mlpsettings.s.iontop == 1 and mp.get_property("ontop") == "no" then
+			delay(0.1,"cycle","ontop")
+		elseif	mlpsettings.s.iontop == 0 and mp.get_property("ontop") == "yes" then
+			delay(0.1,"cycle","ontop")
+		end
+		if	mlpsettings.s.iosd == 0 then
+			--mp.set_property("osd-level","0")
+			mp.set_property("options/osd-font-size","1")
+		--	print(mp.get_property("osd-level"))
+		else	mp.set_property("options/osd-font-size", fontsize)
+		end
+		mp.set_property("loop","yes")
+		mp.set_property("options/force-window", "immediate")
+		mp.set_property_number("options/demuxer-readahead-secs", 20)
+		mp.set_property_bool("rebase-start-time", false)
+		mp.set_property_bool("taskbar-progress", false)
+	--	print("apply")
+		apply = true
+	end
 end
 mp.register_event("start-file",applysettings)
 
@@ -255,7 +262,7 @@ function avsync(name,value)
 --		mp.commandv("seek","1")
 	end
 end
---mp.observe_property("avsync", "number", avsync)
+mp.observe_property("avsync", "number", avsync)
 
 function ct(name,value)
 	if	value ~= nil and math.abs(value) > mlpsettings.s.limitct then
@@ -265,7 +272,7 @@ function ct(name,value)
 		print("outofct: "..value)
 	end
 end
---mp.observe_property("total-avsync-change", "number", ct)
+mp.observe_property("total-avsync-change", "number", ct)
 
 
 get = {
@@ -330,7 +337,10 @@ get = {
 	cache = function()
 		local cache,demux,sec
 		cache = mp.get_property_number("cache-used", 0)
-		demux = mp.get_property("demuxer-cache-time",0)-mp.get_property("playback-time",0)--mp.get_property_number("demuxer-cache-duration", 0)
+		if	currentinfo.acodec == "wmapro" then
+			demux = mp.get_property_number("demuxer-cache-duration", 0)	--wmaproの時にはこっちで
+		else	demux = mp.get_property("demuxer-cache-time",0)-mp.get_property("playback-time",0)
+		end
 		if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
 			sec = cache/(get.bitrate() /8 ) + demux
 		else	sec = 0
@@ -343,12 +353,17 @@ get = {
 
 	--解像度取得
 	resolution = function(tateyoko)
-		if	tateyoko == "tate" then tateyoko = mp.get_property("osd-height", 0)
-		elseif tateyoko == "tateyoko" then 
-			tateyoko = string.format("%d",get.resolution("yoko")).."x"..string.format("%d",get.resolution("tate"))
+		currentinfo.width = string.format("%d", mp.get_property_number("osd-width", 0) )
+		currentinfo.height = string.format("%d", mp.get_property_number("osd-height", 0) )
+		currentinfo.size = currentinfo.width .. "x" .. currentinfo.height
+	--	print(type(currentinfo.width))
+		if	tateyoko == "tate" then 
+			tateyoko =  currentinfo.height
+		elseif tateyoko == "tateyoko" then
+			tateyoko = currentinfo.size
 	--		elseif	type(tateyoko) == "string" then
 	--			tateyoko = string.format("%d", videoinfo.width).."x"..string.format("%d", videoinfo.height)
-		else	tateyoko = mp.get_property("osd-width", 0)
+		else	tateyoko = currentinfo.width
 		end
 		return tateyoko
 	end,
@@ -704,6 +719,10 @@ print(videoinfo.width)
 if	not mp.get_property("cache-used") then print "true"
 else	print "false"
 end
+mp.set_property("options/osd-font-size",1)
+print(mp.get_property("options/osd-font-size"))
+mp.set_property("options/osd-font-size",55)
+print(mp.get_property("options/osd-font-size"))
 --print(mp.get_property_number("cache-used","none"))
 --print(mp.get_property_number("cache","cache"))
 --print(mp.get_property_number("cache-duration","duration"))
@@ -788,7 +807,7 @@ function reconnectcount()
 --		print("count+"..cntpersec.." count:"..count)
 		if	count >= bumpcount then
 			bump.t()
-			count = 0
+			count = count - bumpcount / 2
 		elseif	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then --count >= 100 then
 			mp.commandv("playlist-next")
 			count = count + inccount
@@ -807,6 +826,29 @@ function reconnectcount()
 	end
 end
 
+local test = {}
+test.new = function(name,value,max)
+	local obj = {}
+	obj.name = name
+	obj.value = value
+	obj.max = max
+	obj.cyclevalue = function(self)
+		self.value = self.value + 1
+		if	self.value > self.max then
+			self.value = 0
+		end
+		value = self.value
+		print(value)
+		--name = value
+	end
+	--print(name,value,max)
+	return obj
+end
+
+--local testtype = test.new("testname",4,4)
+
+
+--mp.add_key_binding( mlpsettings.s.ktype,"cycleshowtype",test(mlpsettings.s.showtype,)
 local maxvalue = {
 	type = 3,
 	size = 3,
@@ -817,18 +859,23 @@ local maxvalue = {
 	autospeed = 2,
 	protocol = 1
 }
-
+function t1()
+	for	i , ver in pairs(maxvalue) do
+	print(ver)
+	end
+end
+mp.add_key_binding("KP1","testest",t1)
 function sv(value)
 	mp.osd_message(string.format("%1d",value))
 end
 local cyclevalue = {
-	type = function() mlpsettings.s.showtype = mlpsettings.s.showtype + 1; if mlpsettings.s.showtype > maxvalue.type then mlpsettings.s.showtype = 0 end;sv(mlpsettings.s.showtype)end,
+	type = function() mlpsettings.s.showtype = mlpsettings.s.showtype + 1; if mlpsettings.s.showtype > maxvalue.type then mlpsettings.s.showtype = 0 end;end,
 	size = function() mlpsettings.s.showsize = mlpsettings.s.showsize + 1; if mlpsettings.s.showsize > maxvalue.size then mlpsettings.s.showsize = 0 end;end,
 	bitrate = function() mlpsettings.s.showbitrate = mlpsettings.s.showbitrate + 1; if mlpsettings.s.showbitrate > maxvalue.bitrate then mlpsettings.s.showbitrate = 0 end;end,
 	fps = function() mlpsettings.s.showfps = mlpsettings.s.showfps + 1; if mlpsettings.s.showfps > maxvalue.fps then mlpsettings.s.showfps = 0 end;end,
 	cache = function() mlpsettings.s.showcache = mlpsettings.s.showcache + 1; if mlpsettings.s.showcache > maxvalue.cache then mlpsettings.s.showcache = 0 end;end,
 	playtime = function() mlpsettings.s.showplaytime = mlpsettings.s.showplaytime + 1; if mlpsettings.s.showplaytime > maxvalue.playtime then mlpsettings.s.showplaytime = 0 end;end,
-	autospeed = function() mlpsettings.s.enableautospeed = mlpsettings.s.enableautospeed + 1; if mlpsettings.s.enableautospeed > maxvalue.autospeed then mlpsettings.s.enableautospeed = 0 end;sv(mlpsettings.s.enableautospeed)end,
+	autospeed = function() mlpsettings.s.enableautospeed = mlpsettings.s.enableautospeed + 1; if mlpsettings.s.enableautospeed > maxvalue.autospeed then mlpsettings.s.enableautospeed = 0 end;end,
 	protocol = function() mlpsettings.s.showprotocol = mlpsettings.s.showprotocol + 1; if mlpsettings.s.showprotocol > maxvalue.protocol then mlpsettings.s.showprotocol = 0 end;end
 }
 
@@ -1008,9 +1055,11 @@ mp.add_key_binding( mlpsettings.s.kstop, "stop" , stop)
 --ここからwindowサイズ変更
 
 function changewindowsize(newwidth , newheight , kurobuti)
-	mp.set_property("vf","scale=" .. math.floor(newwidth) ..":"..math.floor(newheight) )
-	mp.set_property_number("window-scale" , 1)
-	mp.set_property("vf","dsize=".. videoinfo.width .. ":".. videoinfo.height)
+	local width, height , ratio = videoinfo.width , videoinfo.height
+	if	width >= height then ratio = 1 / (width / newwidth)
+	else	ratio = 1 / (height / newheight)
+	end
+	mp.set_property_number("window-scale" , ratio)
 end
 
 
@@ -1026,107 +1075,109 @@ local videosize = {
 }
 
 function to50per()
-	local targetsize = 0.5
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 0.5)
 end
 mp.add_key_binding( mlpsettings.s.k50, "50%", to50per)
 
 function to75per()
-	local targetsize = 0.75
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 0.75)
 end
 mp.add_key_binding( mlpsettings.s.k75, "75%", to75per)
 
 function to100per()
-	local targetsize = 1
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 1)
 end
 mp.add_key_binding(  mlpsettings.s.k100, "100%", to100per)
 
 function to150per()
-	local targetsize = 1.5
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 1.5)
 end
 mp.add_key_binding(  mlpsettings.s.k150, "150%", to150per)
 
 function to200per()
-	local targetsize = 2
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 2)
 end
 mp.add_key_binding(  mlpsettings.s.k200, "200%", to200per)
 
 function to250per()
-	local targetsize = 2.5
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 2.5)
 end
 mp.add_key_binding(  mlpsettings.s.k250, "250%", to250per)
 
 function to300per()
-	local targetsize = 3
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 3)
 end
 mp.add_key_binding(  mlpsettings.s.k300, "300%", to300per)
 
 function to25per()
-	local targetsize = 0.25
-	changewindowsize(videoinfo.width * targetsize , videoinfo.height * targetsize)
+	mp.set_property_number("window-scale", 0.25)
 end
 mp.add_key_binding(  mlpsettings.s.k25, "25%", to25per)
 
 function to160x120()
-	changewindowsize(videosize.to160[1] , videosize.to160[2])
+	changewindowsize(videosize.to160[1] , videosize.to160[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k160x120, "160x120", to160x120)
 
 function to320x240()
-	changewindowsize(videosize.to320[1] , videosize.to320[2])
+	changewindowsize(videosize.to320[1] , videosize.to320[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k320x240, "320x240", to320x240)
 
 function to480x360()
-	changewindowsize(videosize.to480[1] , videosize.to480[2])
+	changewindowsize(videosize.to480[1] , videosize.to480[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k480x360, "480x360", to480x360)
 
 function to640x480()
-	changewindowsize(videosize.to640[1] , videosize.to640[2])
+	changewindowsize(videosize.to640[1] , videosize.to640[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k640x480, "640x480", to640x480)
 
 function to800x600()
-	changewindowsize(videosize.to800[1] , videosize.to800[2])
+	changewindowsize(videosize.to800[1] , videosize.to800[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k800x600, "800x600", to800x600)
 
 function to1280x960()
-	changewindowsize(videosize.to1280[1] , videosize.to1280[2])
+	changewindowsize(videosize.to1280[1] , videosize.to1280[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k1280x960, "1280x960", to1280x960)
 
 function to1600x1200()
-	changewindowsize(videosize.to1600[1] , videosize.to1600[2])
+	changewindowsize(videosize.to1600[1] , videosize.to1600[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k1600x1200, "1600x1200", to1600x1200)
 
 function to1920x1440()
-	changewindowsize(videosize.to1920[1] , videosize.to1920[2])
+	changewindowsize(videosize.to1920[1] , videosize.to1920[2] , true)
 end
 mp.add_key_binding(  mlpsettings.s.k1920x1440, "1920x1440", to1920x1440)
 
-local fs,oldwidth,oldheight
+local fs,oldwidth,oldheight,panx
 function minimize()
-	local targetsize = {16 , 12}
-	if	mp.get_property_number("osd-height", 0) >= 40 then
+	local targetsize = {120 , 90}
+	if	mp.get_property_number("video-pan-x") ~= -1 then
+		panx = mp.get_property_number("video-pan-x" , 0)
+		mp.set_property_number("video-pan-x" , -1)
+		oldwidth = get.resolution("yoko")
+		oldheight = get.resolution("tate")
 		if	mp.get_property("fullscreen") == "yes" then
 			fs = true
 			fullscreen()
-			mp.add_timeout(0.10, (function()oldwidth, oldheight = mp.get_screen_size()end))
-			mp.add_timeout(0.15, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)end))
+			mp.add_timeout(0.10, (function()
+				oldwidth = get.resolution("yoko")
+				oldheight = get.resolution("tate")
+				end))
+			mp.add_timeout(0.15, (function()changewindowsize(targetsize[1] , targetsize[2] , -1)
+			end))
 		else
-			oldwidth, oldheight = mp.get_screen_size()
 			changewindowsize(targetsize[1] , targetsize[2] , -1)
+			mp.set_property_number("video-pan-x" , -1)
 		end
-	else	if	fs then
+	else
+		mp.set_property_number("video-pan-x" , panx)
+		if	fs then
 			changewindowsize(oldwidth , oldheight , -1)
 			fullscreen()
 			fs = false
@@ -1137,11 +1188,12 @@ function minimize()
 end
 mp.add_key_binding(  mlpsettings.s.kminimize , "minimize", minimize)
 
+local ismute = false
 function minmute()
-	if	mp.get_property_number("osd-height", 0) > 40  then
-		muted = mp.get_property("mute","no")
-		mp.set_property("mute" , "yes")
-	else	mp.set_property("mute" , muted)
+	if	mp.get_property_number("video-pan-x") == 0 then
+		ismute = mp.get_property_bool("mute",false)
+		mp.set_property_bool("mute" , true)
+	else	mp.set_property_bool("mute" , ismute)
 	end
 	minimize()
 end
