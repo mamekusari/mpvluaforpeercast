@@ -1,5 +1,13 @@
 require("mlpsettings")
 
+mp.set_property_bool("force-seekable", true)
+
+getinfo = {
+	function(case)
+		if case == "" then
+		end
+	end
+}
 
 local videoinfo = {
 	fps = 0,
@@ -23,9 +31,12 @@ local currentinfo ={
 	acodec = ""
 }
 
-local pecainfo = {
-	stream = "/stream/".. string.rep("%x", 32),
-	--pls = "/pls/".. string.rep("%x", 32),
+pecainfo = {
+	ipandport = "",
+	id = "",
+	stream = "",
+	pls = "",
+	protocol = ""
 	
 }
 
@@ -42,12 +53,16 @@ local t = {
 
 
 mp.set_property("options/softvol", "yes" )
+mp.set_property("options/volume-max", mlpsettings.s.maxvolume )
 mp.set_property("options/softvol-max", mlpsettings.s.maxvolume )
 mp.set_property("options/volume", mlpsettings.s.ivolume )
 mp.set_property("options/cursor-autohide" , "3000" )
 mp.set_property("options/cursor-autohide-fs-only", "no" )
 if mlpsettings.s.icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
 elseif mlpsettings.s.icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
+end
+if mlpsettings.s.isnapwindow == 1 then mp.set_property_bool("options/snap-window", true)
+else mp.set_property_bool("options/snap-window", false)
 end
 
 function getsavdir(name)
@@ -126,7 +141,7 @@ function applysettings()
 		else	mp.set_property("options/osd-font-size", fontsize)
 		end
 		mp.set_property("loop","yes")
-		mp.set_property("options/force-window", "immediate")
+	--	mp.set_property("options/force-window", "immediate")
 		mp.set_property_number("options/demuxer-readahead-secs", 20)
 		mp.set_property_bool("rebase-start-time", false)
 		mp.set_property_bool("taskbar-progress", false)
@@ -136,13 +151,13 @@ function applysettings()
 end
 mp.register_event("start-file",applysettings)
 
-function initialmute()
+function beginningmute()
 	if	errorproof("path") and not mp.get_property_bool("mute",true) then
 	mp.set_property("mute","yes")
 	mp.add_timeout(4,function()mp.set_property("mute","no")end)
 	end
 end
-mp.register_event("file-loaded",initialmute)
+mp.register_event("file-loaded",beginningmute)
 
 
 
@@ -159,6 +174,11 @@ playlist = {
 			local streampath,localhost,streamid = get.path()
 			if	not protocol then protocol = "http" 
 			end
+			pecainfo.ipandport = localhost
+			pecainfo.id = streamid
+			pecainfo.stream = localhost .. "/stream/" .. streamid
+			pecainfo.pls = localhost .. "/pls/" .. streamid
+			pecainfo.protocol = protocol
 			return protocol .. "://" .. localhost .. "/stream/" .. streamid
 		end,
 	addurl = function(protocol,times)
@@ -200,24 +220,29 @@ bump = {
 		local playlistcount = mp.get_property_number("playlist-count",0)
 		local bumpurl
 		local i = 0
-		repeat bumpurl = string.find(mp.get_property("playlist/".. i .."/filename"), "/admin??cmd=bump")
+		repeat bumpurl = string.find(mp.get_property("playlist/".. i .."/filename",""), "/admin??cmd=bump")
 			i = i + 1
 			until bumpurl  or playlistcount < i
 		if	playlistcount < i then
-			i = "no bump url"
+			i = false
 		end
 		return i,playlistcount,mp.get_property_number("playlist-pos",0)+1 --1から数える
 	end,
 	t = function()
 		local bumppos,playlistcount,currentpos = bump.pos()
-		if	bumppos > currentpos then
-			for i = currentpos , bumppos - 1 do
-				mp.commandv("playlist-next")
+		if	bumppos then
+			if	bumppos > currentpos then
+				for i = currentpos , bumppos - 1 do
+					mp.commandv("playlist-next")
+				end
+			else
+				for i = bumppos , playlistcount - currentpos + bumppos + 1 do
+					mp.commandv("playlist-next")
+				end
 			end
 		else
-			for i = bumppos , playlistcount - currentpos + bumppos + 1 do
-				mp.commandv("playlist-next")
-			end
+			mp.commandv("loadfile", bump.geturl(), "append")
+			mp.commandv("playlist-next")
 		end
 		count = 0
 		mp.osd_message("bump",3)
@@ -226,7 +251,7 @@ bump = {
 
 function errorproof(case)
 	if 	case == "path" then
-		if string.find(mp.get_property("path"),"/stream/".. string.rep("%x", 32)) then
+		if string.find(mp.get_property("path",""),"/stream/".. string.rep("%x", 32)) then
 			return true
 		end
 	elseif	case == "firststart" then
@@ -266,9 +291,9 @@ mp.observe_property("avsync", "number", avsync)
 
 function ct(name,value)
 	if	value ~= nil and math.abs(value) > mlpsettings.s.limitct then
---		mp.commandv("playlist_next")
+		mp.commandv("playlist_next")
 --		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
-		mp.commandv("drop_buffers")
+--		mp.commandv("drop_buffers")
 		print("outofct: "..value)
 	end
 end
@@ -282,9 +307,9 @@ get = {
 		if	string.find(fullpath,"admin??cmd=") then
 			local pos = mp.get_property_number("playlist-pos",0)
 			if	pos >= 1 then
-				fullpath = mp.get_property("playlist/".. pos-1 .."/filename")
+				fullpath = mp.get_property("playlist/".. pos-1 .."/filename","")
 			else
-				fullpath = mp.get_property("playlist/".. pos+1 .."/filename")
+				fullpath = mp.get_property("playlist/".. pos+1 .."/filename","")
 			end
 		end
 	    local id = {string.find(fullpath,"/stream/(%x*)")}
@@ -335,11 +360,11 @@ get = {
 
 	--キャッシュ取得
 	cache = function()
-		local cache,demux,sec
+		local cache,demux,sec	
 		cache = mp.get_property_number("cache-used", 0)
 		if	currentinfo.acodec == "wmapro" then
 			demux = mp.get_property_number("demuxer-cache-duration", 0)	--wmaproの時にはこっちで
-		else	demux = mp.get_property("demuxer-cache-time",0)-mp.get_property("playback-time",0)
+		else	demux = mp.get_property("demuxer-cache-time",0) - mp.get_property("playback-time",0)
 		end
 		if	mp.get_property_number("packet-video-bitrate", 0) >= 0 then
 			sec = cache/(get.bitrate() /8 ) + demux
@@ -376,7 +401,7 @@ get = {
 		until	videoinfo.codec[i] == nil
 		
 		if	count == 0 then--not videoinfo.codec[1] then
-			return ""
+			return "none"
 		elseif	count == 1 then --not videoinfo.codec[2] then
 			if	mp.get_property("track-list/0/type","") == "video" then
 				currentinfo.vcodec = videoinfo.codec[1]
@@ -598,8 +623,12 @@ mp.register_event("file-loaded", setplaylist)
 --mp.register_event("start-file", setplaylist)
 
 function wmapro()
-	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then
-		mp.set_property("options/video-sync", "display-resample")
+	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" or
+		currentinfo.acodec == "wmav2" or get.codec("audio") == "wmav2" then
+		--not currentinfo.acodec == "mp3" or not get.codec("audio") == "mp3" then
+		if currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then 
+			mp.set_property("options/video-sync", "display-resample")
+		end
 		mlpsettings.s.limitct = 100000
 		mlpsettings.s.limitavsync = 100
 	end
@@ -695,7 +724,7 @@ function autospeed()
 end
 
 function test()
-print(videoinfo.width)
+print(mp.get_property("wid", "HWND"))
 --print(bump.pos())
 --	mp.set_property("stream-pos" , 0 )
 --	print(mp.get_property("stream-capture"))
@@ -751,6 +780,8 @@ print(mp.get_property("options/osd-font-size"))
 --f:close()
 --bump.t()
 --mp.add_timeout(5,resetplaylist())
+disconnectrelay()
+--stop()
 end
 mp.add_key_binding("KP8", "test" , test)
 
@@ -778,6 +809,7 @@ mp.add_periodic_timer(1, (function()
 			end
 		else
 			count = count + 1
+			print ("count: " .. count)
 			if	errorproof("path") and count >= 21 then
 				mp.set_property("loop", "yes")
 				mp.commandv("stop")
@@ -798,9 +830,14 @@ function reconnectcount()
 	local inccount = math.abs(mlpsettings.s.incsec) * cntpersec
 	local deccount = -1 * cntpersec / mlpsettings.s.offsetsec
 	local bumpcount = mlpsettings.s.bumpsec * cntpersec
-	
-
-	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") then
+--	local cache,demux,sec = get.cache()
+--	print(count.." "..type(cache).." "..demux.." "..sec)
+--		if type(cache) == string then cache = 0 end
+--get.cache()
+	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") 
+	--	and
+		--type(cache) ~= "number" 
+	then
 
 		count = count + cntpersec
 		count = (math.modf(count*1000))/1000
@@ -1156,7 +1193,7 @@ mp.add_key_binding(  mlpsettings.s.k1920x1440, "1920x1440", to1920x1440)
 
 local fs,oldwidth,oldheight,panx
 function minimize()
-	local targetsize = {120 , 90}
+	local targetsize = {160 , 90}
 	if	mp.get_property_number("video-pan-x") ~= -1 then
 		panx = mp.get_property_number("video-pan-x" , 0)
 		mp.set_property_number("video-pan-x" , -1)
@@ -1198,3 +1235,19 @@ function minmute()
 	minimize()
 end
 mp.add_key_binding(  mlpsettings.s.kminmute , "minmute", minmute)
+
+
+function disconnectrelay(name,value)
+--if errorproof("path") then
+--print(name)-- .." ".. value)
+--stop()
+--local streampath,localhost,streamid = get.path()
+--mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
+--mp.commandv("loadfile" , "http://" .. pecainfo.ipandport .. "/admin?cmd=stop&id=".. pecainfo.id)
+--mp.commandv("playlist-next")
+--print(pecainfo.id)
+--print(mp.get_property("playlist"))
+--end
+end
+--mp.register_event("end-file", disconnectrelay(name,value))
+--mp.register_event("shutdown", disconnectrelay)
