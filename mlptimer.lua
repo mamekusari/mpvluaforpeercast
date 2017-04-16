@@ -1,7 +1,5 @@
 require("mlpsettings")
 
-mp.set_property_bool("force-seekable", true)
-
 getinfo = {
 	function(case)
 		if case == "" then
@@ -57,7 +55,7 @@ mp.set_property("options/volume-max", mlpsettings.s.maxvolume )
 mp.set_property("options/softvol-max", mlpsettings.s.maxvolume )
 mp.set_property("options/volume", mlpsettings.s.ivolume )
 mp.set_property("options/cursor-autohide" , "3000" )
-mp.set_property("options/cursor-autohide-fs-only", "no" )
+mp.set_property("options/cursor-autohide-fs-only", "no" )		--いったんnoにしないと動かなかった
 if mlpsettings.s.icursorhide == 0 then mp.set_property("options/cursor-autohide" , "no" )
 elseif mlpsettings.s.icursorhide == 2 then mp.set_property("options/cursor-autohide-fs-only", "yes" )
 end
@@ -91,13 +89,13 @@ mp.set_property("options/screenshot-template", mlpsettings.s.ssdir.."%{media-tit
 function delay(sec,command1,command2,command3)
 	mp.add_timeout(sec,function()mp.commandv(command1,command2,command3)end)
 end
+
 local apply = false
 function applysettings()
 	--はじめの設定を適用する
 	if	errorproof("firststart") and errorproof("path") and not apply then
 		local osc = mp.get_property("options/osc")
 		local fontsize = mp.get_property("options/osd-font-size")
-	--	mp.set_property("options/osd-font-size","1")	--osc切り替えのosdを表示しないようにしたい
 		if 	mlpsettings.s.iosc == 1 then
 			if	osc == "no" then
 				mp.commandv("script_message","osc-visibility","cycle")
@@ -135,17 +133,13 @@ function applysettings()
 			delay(0.1,"cycle","ontop")
 		end
 		if	mlpsettings.s.iosd == 0 then
-			--mp.set_property("osd-level","0")
 			mp.set_property("options/osd-font-size","1")
-		--	print(mp.get_property("osd-level"))
 		else	mp.set_property("options/osd-font-size", fontsize)
 		end
 		mp.set_property("loop","yes")
-	--	mp.set_property("options/force-window", "immediate")
 		mp.set_property_number("options/demuxer-readahead-secs", 20)
 		mp.set_property_bool("rebase-start-time", false)
 		mp.set_property_bool("taskbar-progress", false)
-	--	print("apply")
 		apply = true
 	end
 end
@@ -273,18 +267,8 @@ end
 
 function avsync(name,value)
 	if	value ~= nil and math.abs(value) > mlpsettings.s.limitavsync then
---		if	math.abs(value) > 100 then
 			mp.commandv("drop_buffers")
 			print("avsync:"..value)
---			bump()
---			addplaylist()
---			addbumpurl()
-			--mp.osd_message("wrong relay bump",3)
---		else	print("outofsync: "..value)
---			mp.commandv("drop_buffers")
---		end
---		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
---		mp.commandv("seek","1")
 	end
 end
 mp.observe_property("avsync", "number", avsync)
@@ -292,8 +276,6 @@ mp.observe_property("avsync", "number", avsync)
 function ct(name,value)
 	if	value ~= nil and math.abs(value) > mlpsettings.s.limitct then
 		mp.commandv("playlist_next")
---		mp.set_property_number("playlist-pos", mp.get_property_number("playlist-pos",0))
---		mp.commandv("drop_buffers")
 		print("outofct: "..value)
 	end
 end
@@ -381,13 +363,10 @@ get = {
 		currentinfo.width = string.format("%d", mp.get_property_number("osd-width", 0) )
 		currentinfo.height = string.format("%d", mp.get_property_number("osd-height", 0) )
 		currentinfo.size = currentinfo.width .. "x" .. currentinfo.height
-	--	print(type(currentinfo.width))
 		if	tateyoko == "tate" then 
 			tateyoko =  currentinfo.height
 		elseif tateyoko == "tateyoko" then
 			tateyoko = currentinfo.size
-	--		elseif	type(tateyoko) == "string" then
-	--			tateyoko = string.format("%d", videoinfo.width).."x"..string.format("%d", videoinfo.height)
 		else	tateyoko = currentinfo.width
 		end
 		return tateyoko
@@ -400,16 +379,16 @@ get = {
 			i = i + 1
 		until	videoinfo.codec[i] == nil
 		
-		if	count == 0 then--not videoinfo.codec[1] then
+		if	count == 0 then
 			return "none"
-		elseif	count == 1 then --not videoinfo.codec[2] then
+		elseif	count == 1 then
 			if	mp.get_property("track-list/0/type","") == "video" then
 				currentinfo.vcodec = videoinfo.codec[1]
 				currentinfo.acodec = "none"
 			else	currentinfo.acodec = videoinfo.codec[1]
 				currentinfo.vcodec = "none"
 			end
-		elseif	count == 2 then--not videoinfo.codec[3] then
+		elseif	count == 2 then
 			if	mp.get_property("track-list/0/type","") == "video" then
 				currentinfo.vcodec = videoinfo.codec[1]
 				currentinfo.acodec = videoinfo.codec[2]
@@ -442,7 +421,6 @@ tset = function(case)
 			end
 		else	t.type = ""
 		end
---		return	t.type
 	--解像度
 	elseif	case == "size"	then
 		local size
@@ -472,7 +450,6 @@ tset = function(case)
 		elseif	mlpsettings.s.showfps == 1 then t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0)).."/"..videoinfo.fps
 		else	t.fps = string.format("%3.1f", mp.get_property("estimated-vf-fps", 0))
 		end
---		return	t.fps
 	elseif	case == "sort"	then
 		--うまく並べる方法がわからないから全通りごり押し
 		local rate = tset("bitrate")
@@ -500,8 +477,7 @@ tset = function(case)
 					t.info = " ("..t.fps..") "					--0.0.1
 				end
 			end
-		end	
---		return	t.info
+		end
 	--再生時間
 	elseif	case == "playtime"	then
 		if	mlpsettings.s.showplaytime ~= 1 then t.time = ""
@@ -516,7 +492,6 @@ tset = function(case)
 		if	mp.get_property_bool("idle") then
 			t.time = "search"
 		end
---		return	t.time
 	--キャッシュ
 	elseif	case == "cache"	then
 		local cache,demux,sec = get.cache()
@@ -527,13 +502,11 @@ tset = function(case)
 		elseif	mlpsettings.s.showcache == 1 then t.cache = sec
 		elseif	mlpsettings.s.showcache == 2 then t.cache = string.format("%3.1fs+%03dKB",demux,cache)
 		end
---		return	t.cache
 	--音量
 	elseif	case == "volume"	then
 		if	mp.get_property_bool("mute") then t.vol = " vol:-" 
 		else	t.vol =  string.format(" vol:%d", mp.get_property("volume", 0))
 		end
---		return	t.vol
 	--プロトコル
 	elseif	case == "protocol"	then
 		if mlpsettings.s.showprotocol == 1 then
@@ -544,7 +517,6 @@ tset = function(case)
 			end
 		else	t.protocol = ""
 		end
---		return	t.protocol
 	--再生速度
 	elseif	case == "speed"	then
 		if	mp.get_property_number("speed",0) ~= 1 then
@@ -552,7 +524,6 @@ tset = function(case)
 		else
 			t.speed = ""
 		end
---		return	t.speed
 	--まとめてタイトルバーに表示
 	elseif	case == "display" then
 		tset("protocol")
@@ -620,12 +591,10 @@ function resetplaylist()
 	setplaylist()
 end
 mp.register_event("file-loaded", setplaylist)
---mp.register_event("start-file", setplaylist)
 
 function wmapro()
 	if	currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" or
 		currentinfo.acodec == "wmav2" or get.codec("audio") == "wmav2" then
-		--not currentinfo.acodec == "mp3" or not get.codec("audio") == "mp3" then
 		if currentinfo.acodec == "wmapro" or get.codec("audio") == "wmapro" then 
 			mp.set_property("options/video-sync", "display-resample")
 		end
@@ -638,12 +607,10 @@ mp.register_event("playback-restart",wmapro)
 
 function manualrtmp()
 	loadlist = false
---	mp.add_timeout(0.1, function()
 		playlist.set("rtmp",mlpsettings.s.playlistcount,"http")
---	end)
 	loadlist = true
 end
-mp.add_key_binding("KP9", "manualrtmp" , manualrtmp)
+--mp.add_key_binding("KP9", "manualrtmp" , manualrtmp)
 
 getorginfo = {
 	title = function()
@@ -654,13 +621,10 @@ getorginfo = {
 		then
 			t.mediatitle = "no title"
 			mp.set_property("media-title",t.mediatitle)
-		--	print "1"
 		elseif	string.find(mediatitle, string.rep("%x", 32)) then
 			t.mediatitle = title
 			mp.set_property("media-title",t.mediatitle)
-		--	print "2"
 		else	t.mediatitle = mediatitle
-		--	print "3"
 		end
 	end,
 	
@@ -671,8 +635,8 @@ getorginfo = {
 	end,
 	
 	fps = function()
-		if 	mp.get_property_number("fps",0) == 1000 then videoinfo.fps = "vfr"
-		else	videoinfo.fps = string.format("%3.1f", mp.get_property_number("fps",0))
+		if 	mp.get_property_number("container-fps",0) == 1000 then videoinfo.fps = "vfr"
+		else	videoinfo.fps = string.format("%3.1f", mp.get_property_number("container-fps",0))
 		end
 	end,
 
@@ -723,69 +687,6 @@ function autospeed()
 
 end
 
-function test()
-print(mp.get_property("wid", "HWND"))
---print(bump.pos())
---	mp.set_property("stream-pos" , 0 )
---	print(mp.get_property("stream-capture"))
---	print(mp.get_property("time-pos"))
---	print(mp.get_property("fps"))
---	print(mp.get_property("speed"))
---	print(mp.get_property("playback-time"))
---	print(mp.get_property("time-start"))
---	mp.commandv("seek","1")
---	print(mp.get_property("window-minimized"))
---	print(os.execute("intWindowStyle"))
---	if mp.get_property_number("packet-video-bitrate") then print("true")
---	else	print("false")
---	end
---	print(mp.get_property("track-list/2/codec"))
---a = {mp.get_osd_resolution()}
---print(mp.get_property("monitorpixelaspect"))
---print(mp.get_property("video-aspect"))
---print(mp.get_property("options/osc"))
---print(mp.get_property("playlist"))
-if	not mp.get_property("cache-used") then print "true"
-else	print "false"
-end
-mp.set_property("options/osd-font-size",1)
-print(mp.get_property("options/osd-font-size"))
-mp.set_property("options/osd-font-size",55)
-print(mp.get_property("options/osd-font-size"))
---print(mp.get_property_number("cache-used","none"))
---print(mp.get_property_number("cache","cache"))
---print(mp.get_property_number("cache-duration","duration"))
---print(loadlist)
---mp.set_property("vf","scale=".. 800 .. ":" .. -3)-- ..":1:1")
---mp.set_property_number("window-scale" , 1)
---mp.set_property("vf","clr")
---mp.commandv("playlist_pos", mp.get_property("playlist_pos"))
---mp.set_property_number("playlist-pos",mp.get_property_number("playlist-pos",0))
---print(mp.get_property_number("playlist-pos"))
---print(mp.get_property_number("video-bitrate"))
---mp.osd_message(mp.get_property("path"),5)
---mp.osd_message(mp.get_property("path"),5)
---print(mp.get_property("playlist/0/filename"))
---local f = io.open("test.txt", "r")
---local a=io.open("testwrite.txt","w+")
---for line in f:lines() do
---	
---	a:write(line)
---end
---print(mp.get_property("audio-codec-name"))
---print(mp.get_property("video-codec"))
---print(mp.get_property("options/osc"))
---print(mp.get_property("demuxer-cache-time",0)-mp.get_property("playback-time",0))
---print(mp.get_property("demuxer-cache-duration",0))
---f:close()
---bump.t()
---mp.add_timeout(5,resetplaylist())
-disconnectrelay()
---stop()
-end
-mp.add_key_binding("KP8", "test" , test)
-
-
 --リレーそのままで開き直す
 function refresh()
 	if	errorproof("path") then
@@ -800,13 +701,15 @@ mp.add_key_binding("KP7","refresh",refresh)
 --タイマーと最初に止まったままだった時の処理
 local count = 0
 mp.add_periodic_timer(1, (function()
---function timer()
 	if	errorproof("path") or mlpsettings.s.enableothers == 1 then
 		if 	not errorproof("firststart") or not errorproof("path") then
 			autospeed()
 			mp.set_property("options/title", tset("display") )
-			if errorproof("path") then reconnectcount()
+			if	errorproof("path") then
+				reconnectcount()
 			end
+			countplaytime = mp.get_property_number("playback-time",-1)
+			countcache = (select(3, get.cache()))
 		else
 			count = count + 1
 			print ("count: " .. count)
@@ -816,12 +719,13 @@ mp.add_periodic_timer(1, (function()
 				mp.commandv("loadfile", mp.get_property("path"))
 				resetplaylist()
 				count = 0
-			end		
+			end
 		end
 	end
 end))
 
 --早めに再開できるようにと、再生と停止を繰り返すときの処理
+local countcache , countplaytime = 0,0
 function reconnectcount()
 	local pos = mp.get_property_number("playlist-pos",0)
 	local cntpersec = 10					--止まった時に1秒ごとに増える数
@@ -830,22 +734,15 @@ function reconnectcount()
 	local inccount = math.abs(mlpsettings.s.incsec) * cntpersec
 	local deccount = -1 * cntpersec / mlpsettings.s.offsetsec
 	local bumpcount = mlpsettings.s.bumpsec * cntpersec
---	local cache,demux,sec = get.cache()
---	print(count.." "..type(cache).." "..demux.." "..sec)
---		if type(cache) == string then cache = 0 end
---get.cache()
-	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause") 
-	--	and
-		--type(cache) ~= "number" 
+	if	mp.get_property_bool("core-idle") and not mp.get_property_bool("pause")
 	then
 
 		count = count + cntpersec
 		count = (math.modf(count*1000))/1000
---		print("count+"..cntpersec.." count:"..count)
 		if	count >= bumpcount then
 			bump.t()
 			count = count - bumpcount / 2
-		elseif	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then --count >= 100 then
+		elseif	math.fmod(math.floor(count/10),math.floor(incposseccount/10)) == 0 then
 			mp.commandv("playlist-next")
 			count = count + inccount
 			print("current pos:".. pos + 2 .."  count+"..inccount.." count:"..count)
@@ -857,7 +754,6 @@ function reconnectcount()
 	else
 		if	count > 0 then
 			count = count + deccount
---			print("count"..deccount.." count:"..count)
 		else	count = 0
 		end
 	end
@@ -876,16 +772,10 @@ test.new = function(name,value,max)
 		end
 		value = self.value
 		print(value)
-		--name = value
 	end
-	--print(name,value,max)
 	return obj
 end
 
---local testtype = test.new("testname",4,4)
-
-
---mp.add_key_binding( mlpsettings.s.ktype,"cycleshowtype",test(mlpsettings.s.showtype,)
 local maxvalue = {
 	type = 3,
 	size = 3,
@@ -935,7 +825,6 @@ mp.add_forced_key_binding(  mlpsettings.s.kosc, "osc", osc)
 function screenshot()
 	if 	errorproof("playing") then
 		if	  mlpsettings.s.sssubdir == 1 then
---			io.open(  mlpsettings.s.ssdir.."%{media-title}\\","w")
 			  mlpsettings.s.ssdir =   mlpsettings.s.ssdir ..mp.get_property("media-title").."\\"
 			os.execute("mkdir ".."\""..  mlpsettings.s.ssdir.."\"")
 			mp.set_property("options/screenshot-template",   mlpsettings.s.ssdir.."%{media-title}_%tY%tm%td_%tH%tM%tS_%n")
@@ -1235,19 +1124,3 @@ function minmute()
 	minimize()
 end
 mp.add_key_binding(  mlpsettings.s.kminmute , "minmute", minmute)
-
-
-function disconnectrelay(name,value)
---if errorproof("path") then
---print(name)-- .." ".. value)
---stop()
---local streampath,localhost,streamid = get.path()
---mp.commandv("loadfile" , "http://".. localhost .. "/admin?cmd=stop&id=".. streamid)
---mp.commandv("loadfile" , "http://" .. pecainfo.ipandport .. "/admin?cmd=stop&id=".. pecainfo.id)
---mp.commandv("playlist-next")
---print(pecainfo.id)
---print(mp.get_property("playlist"))
---end
-end
---mp.register_event("end-file", disconnectrelay(name,value))
---mp.register_event("shutdown", disconnectrelay)
